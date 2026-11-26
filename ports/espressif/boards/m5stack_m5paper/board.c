@@ -29,7 +29,6 @@ void board_init(void) {
     // busio_spi_obj_t *spi = common_hal_board_create_spi(0);
 
     // // Set up the DisplayIO pin object
-    // fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
     // bus->base.type = &fourwire_fourwire_type;
     // common_hal_fourwire_fourwire_construct(bus,
     //     spi,
@@ -40,7 +39,6 @@ void board_init(void) {
     //     0, // Polarity
     //     0); // Phase
 
-    // epaperdisplay_epaperdisplay_obj_t *display = &allocate_display()->epaper_display;
     // display->base.type = &epaperdisplay_epaperdisplay_type;
 
     // common_hal_epaperdisplay_epaperdisplay_construct(

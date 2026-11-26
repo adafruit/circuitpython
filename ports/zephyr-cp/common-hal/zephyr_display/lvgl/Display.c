@@ -348,6 +348,7 @@ static int zephyr_display_lvgl_recreate_display(zephyr_display_display_obj_t *se
     data->driver.display_dev = self->device;
     display_get_capabilities(self->device, &data->driver.cap);
     lv_display_set_user_data(display, &data->driver);
+    lv_display_set_driver_data(display, self);
 
     int result = set_lvgl_rendering_cb(display);
     // The glue rejects monochrome unless LVGL itself renders 1bpp, and returns before
@@ -616,6 +617,8 @@ void common_hal_zephyr_display_display_construct_from_device(zephyr_display_disp
     lvgl_timer_handler_resume();
     #endif
     common_hal_zephyr_display_display_set_auto_refresh(self, auto_refresh);
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 uint16_t common_hal_zephyr_display_display_get_width(zephyr_display_display_obj_t *self) {
@@ -675,7 +678,7 @@ void common_hal_zephyr_display_display_set_rotation(zephyr_display_display_obj_t
         lv_display_set_default(self->lv_display);
     }
 
-    if (self == &displays[0].zephyr_display) {
+    if (displayio_is_primary_display(self)) {
         supervisor_stop_terminal();
         supervisor_start_terminal(self->core.width, self->core.height);
     }
@@ -750,7 +753,7 @@ void release_zephyr_display(zephyr_display_display_obj_t *self) {
     common_hal_zephyr_display_display_set_auto_refresh(self, false);
     nlr_jump_callback_node_t cleanup;
     displayio_lvgl_lock_with_cleanup(&cleanup);
-    displayio_lvgl_set_root_group(NULL);
+    displayio_lvgl_detach_display(self->lv_display);
     if (self->lv_display != NULL) {
         lv_display_delete(self->lv_display);
         self->lv_display = NULL;
@@ -761,19 +764,26 @@ void release_zephyr_display(zephyr_display_display_obj_t *self) {
     displayio_lvgl_unlock_with_cleanup();
 }
 
-void zephyr_display_display_collect_ptrs(zephyr_display_display_obj_t *self) {
-    (void)self;
-    displayio_display_core_collect_ptrs(&self->core);
+mp_obj_t zephyr_display_display_start_vm(zephyr_display_display_obj_t *self) {
+    mp_obj_t root_group = self->core.current_group == NULL ? mp_const_none : MP_OBJ_FROM_PTR(self->core.current_group);
+    return mp_obj_new_list(1, (mp_obj_t[]) {root_group});
 }
+
 
 void zephyr_display_display_reset(zephyr_display_display_obj_t *self) {
     if (self->device != NULL && device_is_ready(self->device)) {
         common_hal_zephyr_display_display_set_auto_refresh(self, true);
-        displayio_display_core_set_root_group(&self->core, &circuitpython_splash);
-        displayio_lvgl_set_root_group(&circuitpython_splash);
-        displayio_lvgl_lock();
-        lv_refr_now(lv_display_get_default());
-        displayio_lvgl_unlock();
+        nlr_jump_callback_node_t cleanup;
+        displayio_lvgl_lock_with_cleanup(&cleanup);
+        displayio_lvgl_detach_display(self->lv_display);
+        displayio_display_core_set_root_group(&self->core, NULL);
+        if (displayio_is_primary_display(self) && self->lv_display != NULL) {
+            displayio_display_core_set_root_group(&self->core, &circuitpython_splash);
+            lv_display_set_default(self->lv_display);
+            displayio_lvgl_set_root_group(&circuitpython_splash);
+            lv_refr_now(self->lv_display);
+        }
+        displayio_lvgl_unlock_with_cleanup();
     } else {
         release_zephyr_display(self);
     }

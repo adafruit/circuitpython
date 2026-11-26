@@ -103,9 +103,13 @@ struct _videocore_videobuffer_obj_t {
 };
 
 // Read an optional framebuffer protocol getter, or default_value when it is NULL.
+// Retain the Python framebuffer on the VideoBuffer, and resolve its native
+// target when invoking the framebuffer protocol.
+mp_obj_t videocore_videobuffer_framebuffer_native(videocore_videobuffer_obj_t *self);
+
 #define FB_GETTER(method, default_value) \
     (self->framebuffer_protocol->method \
-        ? self->framebuffer_protocol->method(self->framebuffer) \
+        ? self->framebuffer_protocol->method(videocore_videobuffer_framebuffer_native(self)) \
         : (default_value))
 
 void common_hal_videocore_videobuffer_construct(videocore_videobuffer_obj_t *self, mp_obj_t framebuffer,

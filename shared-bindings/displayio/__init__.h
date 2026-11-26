@@ -33,12 +33,10 @@ void common_hal_displayio_release_displays(void);
 // - If display is the primary display, the primary display is cleared
 //   and the terminal is stopped.
 //
-// Raises RuntimeError, with nothing released, if an EPaperDisplay using
-// lag_frames can't get its bus.
-void common_hal_displayio_deinit_display(mp_obj_t display);
+// If an EPaperDisplay using lag_frames can't get its bus, this waits up to
+// 30 seconds for the panel and bus before continuing. It does not raise.
 mp_obj_t common_hal_displayio_get_primary_display(void);
 void common_hal_displayio_set_primary_display(mp_obj_t o);
-void common_hal_displayio_auto_primary_display(void);
 bool common_hal_displayio_primary_display_set_by_user(void);
 
 extern const mp_obj_type_t displayio_colorspace_type;
@@ -65,4 +63,3 @@ typedef void (*display_bus_send)(mp_obj_t bus, display_byte_type_t byte_type,
     display_chip_select_behavior_t chip_select, const uint8_t *data, uint32_t data_length);
 typedef void (*display_bus_end_transaction)(mp_obj_t bus);
 typedef void (*display_bus_flush)(mp_obj_t bus);
-typedef void (*display_bus_collect_ptrs)(mp_obj_t bus);

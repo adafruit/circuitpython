@@ -27,8 +27,14 @@ static uint8_t display_init_sequence[] = {
     0x29, 0x80, 0x0A,             // Display on + 10ms
 };
 
+static qspibus_qspibus_obj_t board_display_bus;
+busdisplay_busdisplay_obj_t board_display;
+
 void board_init(void) {
-    qspibus_qspibus_obj_t *bus = &allocate_display_bus_or_raise()->qspi_bus;
+    qspibus_qspibus_obj_t *bus = displayio_native_init(&board_display_bus, &qspibus_qspibus_protocol, &qspibus_qspibus_type, 0, MP_OBJ_NULL, true);
+    if (bus == NULL) {
+        return;
+    }
     bus->base.type = &qspibus_qspibus_type;
 
     common_hal_qspibus_qspibus_construct(bus,
@@ -43,7 +49,10 @@ void board_init(void) {
         40000000);
 
     // The 466x466 panel's first visible column is 6.
-    busdisplay_busdisplay_obj_t *display = &allocate_display_or_raise()->display;
+    busdisplay_busdisplay_obj_t *display = displayio_native_init(&board_display, &busdisplay_busdisplay_protocol, &busdisplay_busdisplay_type, 0, MP_OBJ_FROM_PTR(bus), true);
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &busdisplay_busdisplay_type;
 
     common_hal_busdisplay_busdisplay_construct(display,

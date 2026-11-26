@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "py/obj.h"
+#include "py/gc.h"
 #include "py/objproperty.h"
 #include "py/runtime.h"
 #include "py/objarray.h"
@@ -178,21 +179,27 @@ static mp_obj_t rgbmatrix_rgbmatrix_make_new(const mp_obj_type_t *type, size_t n
 
     mp_int_t width = mp_arg_validate_int_min(args[ARG_width].u_int, 1, MP_QSTR_width);
 
-    // Reserve a display bus only after validating constructor arguments.
-    self = &allocate_display_bus_or_raise()->rgbmatrix;
-    self->base.type = &rgbmatrix_RGBMatrix_type;
+    // Allocate only after validating constructor arguments.
+    self = displayio_native_init(NULL, &rgbmatrix_RGBMatrix_protocol,
+        &rgbmatrix_RGBMatrix_type, sizeof(*self), MP_OBJ_NULL, false);
 
-    common_hal_rgbmatrix_rgbmatrix_construct(self,
-        width,
-        bit_depth,
-        rgb_count, rgb_pins,
-        addr_count, addr_pins,
-        clock_pin, latch_pin, output_enable_pin,
-        args[ARG_doublebuffer].u_bool,
-        args[ARG_framebuffer].u_obj, tile, args[ARG_serpentine].u_bool, NULL,
-        row_addr_count, row_address_mode);
-
-    return MP_OBJ_FROM_PTR(self);
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        common_hal_rgbmatrix_rgbmatrix_construct(self,
+            width,
+            bit_depth,
+            rgb_count, rgb_pins,
+            addr_count, addr_pins,
+            clock_pin, latch_pin, output_enable_pin,
+            args[ARG_doublebuffer].u_bool,
+            args[ARG_framebuffer].u_obj, tile, args[ARG_serpentine].u_bool, NULL,
+            row_addr_count, row_address_mode);
+        mp_obj_t proxy = displayio_register(MP_OBJ_FROM_PTR(self));
+        nlr_pop();
+        return proxy;
+    }
+    displayio_construct_failed(MP_OBJ_FROM_PTR(self));
+    nlr_jump(nlr.ret_val);
 }
 
 //|     def deinit(self) -> None:
@@ -202,12 +209,45 @@ static mp_obj_t rgbmatrix_rgbmatrix_make_new(const mp_obj_type_t *type, size_t n
 //|         ...
 //|
 static mp_obj_t rgbmatrix_rgbmatrix_deinit(mp_obj_t self_in) {
-    rgbmatrix_rgbmatrix_obj_t *self = (rgbmatrix_rgbmatrix_obj_t *)self_in;
-    common_hal_rgbmatrix_rgbmatrix_deinit(self);
+    displayio_bus_deinit_obj(self_in, &rgbmatrix_RGBMatrix_type);
     return mp_const_none;
 }
 
 static MP_DEFINE_CONST_FUN_OBJ_1(rgbmatrix_rgbmatrix_deinit_obj, rgbmatrix_rgbmatrix_deinit);
+
+static mp_obj_t rgbmatrix_rgbmatrix___del__(mp_obj_t self_in) {
+    displayio_bus_proxy_finalise(MP_OBJ_TO_PTR(self_in));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(rgbmatrix_rgbmatrix___del___obj, rgbmatrix_rgbmatrix___del__);
+
+static void rgbmatrix_protocol_deinit(void *self) {
+    common_hal_rgbmatrix_rgbmatrix_deinit(self);
+}
+
+static void *rgbmatrix_protocol_start_vm(void *self) {
+    return rgbmatrix_rgbmatrix_start_vm(self);
+}
+
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+static bool rgbmatrix_protocol_stop_vm(void *self_in) {
+    rgbmatrix_rgbmatrix_obj_t *self = self_in;
+    if (self->framebuffer != mp_const_none && gc_ptr_on_heap(MP_OBJ_TO_PTR(self->framebuffer))) {
+        common_hal_rgbmatrix_rgbmatrix_reconstruct(self);
+    } else {
+        common_hal_rgbmatrix_rgbmatrix_set_paused(self, true);
+    }
+    return mp_obj_get_type(MP_OBJ_FROM_PTR(self)) == &rgbmatrix_RGBMatrix_type;
+}
+#endif
+
+const displayio_protocol_t rgbmatrix_RGBMatrix_protocol = {
+    .deinit = rgbmatrix_protocol_deinit,
+    .start_vm = rgbmatrix_protocol_start_vm,
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    .stop_vm = rgbmatrix_protocol_stop_vm,
+    #endif
+};
 
 static void check_for_deinit(rgbmatrix_rgbmatrix_obj_t *self) {
     if (!self->protomatter.rgbPins) {
@@ -220,14 +260,14 @@ static void check_for_deinit(rgbmatrix_rgbmatrix_obj_t *self) {
 //|     and any other value up to 1.0 turns the display on fully."""
 //|
 static mp_obj_t rgbmatrix_rgbmatrix_get_brightness(mp_obj_t self_in) {
-    rgbmatrix_rgbmatrix_obj_t *self = (rgbmatrix_rgbmatrix_obj_t *)self_in;
+    rgbmatrix_rgbmatrix_obj_t *self = displayio_proxy_native(self_in, &rgbmatrix_RGBMatrix_type);
     check_for_deinit(self);
     return mp_obj_new_float(common_hal_rgbmatrix_rgbmatrix_get_paused(self)? 0.0f : 1.0f);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(rgbmatrix_rgbmatrix_get_brightness_obj, rgbmatrix_rgbmatrix_get_brightness);
 
 static mp_obj_t rgbmatrix_rgbmatrix_set_brightness(mp_obj_t self_in, mp_obj_t value_in) {
-    rgbmatrix_rgbmatrix_obj_t *self = (rgbmatrix_rgbmatrix_obj_t *)self_in;
+    rgbmatrix_rgbmatrix_obj_t *self = displayio_proxy_native(self_in, &rgbmatrix_RGBMatrix_type);
     check_for_deinit(self);
     mp_float_t brightness = mp_obj_get_float(value_in);
     if (brightness < 0.0f || brightness > 1.0f) {
@@ -249,7 +289,7 @@ MP_PROPERTY_GETSET(rgbmatrix_rgbmatrix_brightness_obj,
 //|         ...
 //|
 static mp_obj_t rgbmatrix_rgbmatrix_refresh(mp_obj_t self_in) {
-    rgbmatrix_rgbmatrix_obj_t *self = (rgbmatrix_rgbmatrix_obj_t *)self_in;
+    rgbmatrix_rgbmatrix_obj_t *self = displayio_proxy_native(self_in, &rgbmatrix_RGBMatrix_type);
     check_for_deinit(self);
     common_hal_rgbmatrix_rgbmatrix_refresh(self);
     return mp_const_none;
@@ -259,7 +299,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(rgbmatrix_rgbmatrix_refresh_obj, rgbmatrix_rgbmatrix_r
 //|     width: int
 //|     """The width of the display, in pixels"""
 static mp_obj_t rgbmatrix_rgbmatrix_get_width(mp_obj_t self_in) {
-    rgbmatrix_rgbmatrix_obj_t *self = (rgbmatrix_rgbmatrix_obj_t *)self_in;
+    rgbmatrix_rgbmatrix_obj_t *self = displayio_proxy_native(self_in, &rgbmatrix_RGBMatrix_type);
     check_for_deinit(self);
     return MP_OBJ_NEW_SMALL_INT(common_hal_rgbmatrix_rgbmatrix_get_width(self));
 }
@@ -272,7 +312,7 @@ MP_PROPERTY_GETTER(rgbmatrix_rgbmatrix_width_obj,
 //|
 //|
 static mp_obj_t rgbmatrix_rgbmatrix_get_height(mp_obj_t self_in) {
-    rgbmatrix_rgbmatrix_obj_t *self = (rgbmatrix_rgbmatrix_obj_t *)self_in;
+    rgbmatrix_rgbmatrix_obj_t *self = displayio_proxy_native(self_in, &rgbmatrix_RGBMatrix_type);
     check_for_deinit(self);
     return MP_OBJ_NEW_SMALL_INT(common_hal_rgbmatrix_rgbmatrix_get_height(self));
 }
@@ -283,7 +323,7 @@ MP_PROPERTY_GETTER(rgbmatrix_rgbmatrix_height_obj,
 
 static const mp_rom_map_elem_t rgbmatrix_rgbmatrix_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&rgbmatrix_rgbmatrix_deinit_obj) },
-    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&rgbmatrix_rgbmatrix_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&rgbmatrix_rgbmatrix___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_brightness), MP_ROM_PTR(&rgbmatrix_rgbmatrix_brightness_obj) },
     { MP_ROM_QSTR(MP_QSTR_refresh), MP_ROM_PTR(&rgbmatrix_rgbmatrix_refresh_obj) },
     { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&rgbmatrix_rgbmatrix_width_obj) },
@@ -292,35 +332,35 @@ static const mp_rom_map_elem_t rgbmatrix_rgbmatrix_locals_dict_table[] = {
 static MP_DEFINE_CONST_DICT(rgbmatrix_rgbmatrix_locals_dict, rgbmatrix_rgbmatrix_locals_dict_table);
 
 static void rgbmatrix_rgbmatrix_get_bufinfo(mp_obj_t self_in, mp_buffer_info_t *bufinfo) {
-    common_hal_rgbmatrix_rgbmatrix_get_bufinfo(self_in, bufinfo);
+    common_hal_rgbmatrix_rgbmatrix_get_bufinfo(MP_OBJ_TO_PTR(self_in), bufinfo);
 }
 
 // These version exists so that the prototype matches the protocol,
 // avoiding a type cast that can hide errors
 static void rgbmatrix_rgbmatrix_swapbuffers(mp_obj_t self_in, uint8_t *dirty_row_bitmap) {
     (void)dirty_row_bitmap;
-    common_hal_rgbmatrix_rgbmatrix_refresh(self_in);
+    common_hal_rgbmatrix_rgbmatrix_refresh(MP_OBJ_TO_PTR(self_in));
 }
 
 static void rgbmatrix_rgbmatrix_deinit_proto(mp_obj_t self_in) {
-    common_hal_rgbmatrix_rgbmatrix_deinit(self_in);
+    common_hal_rgbmatrix_rgbmatrix_deinit(MP_OBJ_TO_PTR(self_in));
 }
 
 static float rgbmatrix_rgbmatrix_get_brightness_proto(mp_obj_t self_in) {
-    return common_hal_rgbmatrix_rgbmatrix_get_paused(self_in) ? 0.0f : 1.0f;
+    return common_hal_rgbmatrix_rgbmatrix_get_paused(MP_OBJ_TO_PTR(self_in)) ? 0.0f : 1.0f;
 }
 
 static bool rgbmatrix_rgbmatrix_set_brightness_proto(mp_obj_t self_in, mp_float_t value) {
-    common_hal_rgbmatrix_rgbmatrix_set_paused(self_in, value <= 0);
+    common_hal_rgbmatrix_rgbmatrix_set_paused(MP_OBJ_TO_PTR(self_in), value <= 0);
     return true;
 }
 
 static int rgbmatrix_rgbmatrix_get_width_proto(mp_obj_t self_in) {
-    return common_hal_rgbmatrix_rgbmatrix_get_width(self_in);
+    return common_hal_rgbmatrix_rgbmatrix_get_width(MP_OBJ_TO_PTR(self_in));
 }
 
 static int rgbmatrix_rgbmatrix_get_height_proto(mp_obj_t self_in) {
-    return common_hal_rgbmatrix_rgbmatrix_get_height(self_in);
+    return common_hal_rgbmatrix_rgbmatrix_get_height(MP_OBJ_TO_PTR(self_in));
 }
 
 static int rgbmatrix_rgbmatrix_get_color_depth_proto(mp_obj_t self_in) {
@@ -351,12 +391,12 @@ static const framebuffer_p_t rgbmatrix_rgbmatrix_proto = {
 };
 
 static mp_int_t rgbmatrix_rgbmatrix_get_buffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags) {
-    rgbmatrix_rgbmatrix_obj_t *self = (rgbmatrix_rgbmatrix_obj_t *)self_in;
+    rgbmatrix_rgbmatrix_obj_t *self = displayio_proxy_native(self_in, &rgbmatrix_RGBMatrix_type);
     // a readonly framebuffer would be unusual but not impossible
     if ((flags & MP_BUFFER_WRITE) && !(self->bufinfo.typecode & MP_OBJ_ARRAY_TYPECODE_FLAG_RW)) {
         return 1;
     }
-    common_hal_rgbmatrix_rgbmatrix_get_bufinfo(self_in, bufinfo);
+    common_hal_rgbmatrix_rgbmatrix_get_bufinfo(self, bufinfo);
     bufinfo->typecode = 'H';
     return 0;
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 /*
  * This file is part of the Micro Python project, http://micropython.org/
  *
@@ -84,6 +86,7 @@ struct dvi_audio_state;
 
 typedef struct {
     mp_obj_base_t base;
+    displayio_bus_lifetime_t bus_lifetime;
     struct dvi_audio_state *dvi_audio;
     // The picodvi.AudioOut using this framebuffer, or MP_OBJ_NULL. It lives
     // as long as the framebuffer.

@@ -11,6 +11,7 @@
 
 #include "shared/runtime/context_manager_helpers.h"
 #include "py/binary.h"
+#include "py/gc.h"
 #include "py/objproperty.h"
 #include "py/objtype.h"
 #include "py/proto.h"
@@ -78,36 +79,32 @@ static mp_obj_t framebufferio_framebufferdisplay_make_new(const mp_obj_type_t *t
         mp_raise_ValueError(MP_ERROR_TEXT("Display rotation must be in 90 degree increments"));
     }
 
-    // Check the framebuffer before taking a display slot: construct would raise after the slot
-    // is in use.
     mp_proto_get_or_throw(MP_QSTR_protocol_framebuffer, framebuffer);
+    mp_obj_t native_bus = displayio_bus_native(framebuffer);
+    mp_obj_t construct_framebuffer = native_bus == MP_OBJ_NULL ? framebuffer : native_bus;
+    framebufferio_framebufferdisplay_obj_t *self = displayio_native_init(NULL, &framebufferio_framebufferdisplay_protocol,
+        &framebufferio_framebufferdisplay_type, sizeof(*self), native_bus, false);
 
-    primary_display_t *disp = allocate_display_or_raise();
-    framebufferio_framebufferdisplay_obj_t *self = &disp->framebuffer_display;
-    self->base.type = &framebufferio_framebufferdisplay_type;
-    common_hal_framebufferio_framebufferdisplay_construct(
-        self,
-        framebuffer,
-        rotation,
-        args[ARG_auto_refresh].u_bool
-        );
-
-    return self;
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        common_hal_framebufferio_framebufferdisplay_construct(
+            self,
+            construct_framebuffer,
+            rotation,
+            args[ARG_auto_refresh].u_bool
+            );
+        mp_obj_t proxy = displayio_register(MP_OBJ_FROM_PTR(self));
+        nlr_pop();
+        return proxy;
+    }
+    displayio_construct_failed(MP_OBJ_FROM_PTR(self));
+    nlr_jump(nlr.ret_val);
 }
 
 // Helper to ensure we have the native super class instead of a subclass.
 // Raises if the display has been released.
 static framebufferio_framebufferdisplay_obj_t *native_display(mp_obj_t display_obj) {
-    mp_obj_t native_display = mp_obj_cast_to_native_base(display_obj, &framebufferio_framebufferdisplay_type);
-    if (native_display == MP_OBJ_NULL) {
-        raise_deinited_error();
-    }
-    mp_obj_assert_native_inited(native_display);
-    framebufferio_framebufferdisplay_obj_t *self = MP_OBJ_TO_PTR(native_display);
-    if (self->base.type != &framebufferio_framebufferdisplay_type) {
-        raise_deinited_error();
-    }
-    return self;
+    return displayio_proxy_native(display_obj, &framebufferio_framebufferdisplay_type);
 }
 
 //|     def deinit(self) -> None:
@@ -115,18 +112,67 @@ static framebufferio_framebufferdisplay_obj_t *native_display(mp_obj_t display_o
 //|
 //|         To release a built-in display, or a display kept from an earlier run,
 //|         use ``supervisor.runtime.display.deinit()``.
-//|         As of CircuitPython 11.0.0, this replaces `displayio.release_displays()`, which is deprecated.
 //|         """
 //|         ...
 //|
 static mp_obj_t framebufferio_framebufferdisplay_obj_deinit(mp_obj_t self_in) {
-    mp_obj_t native_display = mp_obj_cast_to_native_base(self_in, &framebufferio_framebufferdisplay_type);
-    if (native_display != MP_OBJ_NULL) {
-        common_hal_displayio_deinit_display(native_display);
+    mp_obj_t native = displayio_native_obj(self_in, &framebufferio_framebufferdisplay_type);
+    if (native != MP_OBJ_NULL) {
+        displayio_display_deinit(native);
     }
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(framebufferio_framebufferdisplay_deinit_obj, framebufferio_framebufferdisplay_obj_deinit);
+
+static mp_obj_t framebufferio_framebufferdisplay_obj___del__(mp_obj_t self_in) {
+    displayio_display_proxy_finalise(MP_OBJ_TO_PTR(self_in));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(framebufferio_framebufferdisplay___del___obj, framebufferio_framebufferdisplay_obj___del__);
+
+static void framebuffer_protocol_deinit(void *self_in) {
+    framebufferio_framebufferdisplay_obj_t *self = self_in;
+    release_framebufferdisplay(self);
+    if (self->link.bus == MP_OBJ_NULL && self->framebuffer_protocol != NULL &&
+        self->framebuffer_protocol->deinit != NULL) {
+        self->framebuffer_protocol->deinit(self->framebuffer);
+    }
+}
+
+static void *framebuffer_protocol_start_vm(void *self) {
+    return framebufferio_framebufferdisplay_start_vm(self);
+}
+
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+static bool framebuffer_protocol_stop_vm(void *self_in) {
+    framebufferio_framebufferdisplay_obj_t *self = self_in;
+    if (self->link.bus == MP_OBJ_NULL && gc_ptr_on_heap(MP_OBJ_TO_PTR(self->framebuffer))) {
+        return false;
+    }
+    framebufferio_framebufferdisplay_reset(self);
+    return true;
+}
+#endif
+
+#if !CIRCUITPY_DISPLAYIO_LVGL
+static void framebuffer_protocol_background(void *self) {
+    framebufferio_framebufferdisplay_background(self);
+}
+#endif
+
+
+const displayio_protocol_t framebufferio_framebufferdisplay_protocol = {
+    .deinit = framebuffer_protocol_deinit,
+    .start_vm = framebuffer_protocol_start_vm,
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    .stop_vm = framebuffer_protocol_stop_vm,
+    #endif
+    #if !CIRCUITPY_DISPLAYIO_LVGL
+    .background = framebuffer_protocol_background,
+    #else
+    .background = displayio_display_background_noop,
+    #endif
+};
 
 // Undocumented show() implementation with a friendly error message.
 static mp_obj_t framebufferio_framebufferdisplay_obj_show(mp_obj_t self_in, mp_obj_t group_in) {
@@ -396,6 +442,7 @@ static mp_obj_t framebufferio_framebufferdisplay_obj_set_root_group(mp_obj_t sel
     if (!ok) {
         mp_raise_ValueError(MP_ERROR_TEXT("Group already used"));
     }
+    displayio_display_set_root_group_reference(MP_OBJ_FROM_PTR(self), group_in);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(framebufferio_framebufferdisplay_set_root_group_obj, framebufferio_framebufferdisplay_obj_set_root_group);
@@ -406,6 +453,7 @@ MP_PROPERTY_GETSET(framebufferio_framebufferdisplay_root_group_obj,
 
 static const mp_rom_map_elem_t framebufferio_framebufferdisplay_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&framebufferio_framebufferdisplay_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&framebufferio_framebufferdisplay___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_show), MP_ROM_PTR(&framebufferio_framebufferdisplay_show_obj) },
     { MP_ROM_QSTR(MP_QSTR_refresh), MP_ROM_PTR(&framebufferio_framebufferdisplay_refresh_obj) },
     { MP_ROM_QSTR(MP_QSTR_fill_row), MP_ROM_PTR(&framebufferio_framebufferdisplay_fill_row_obj) },

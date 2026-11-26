@@ -18,6 +18,9 @@ digitalio_digitalinout_obj_t display_on;
 
 uint32_t last_down_ticks_ms;
 
+static sharpdisplay_framebuffer_obj_t board_display_bus;
+framebufferio_framebufferdisplay_obj_t board_display;
+
 void board_init(void) {
     common_hal_digitalio_digitalinout_construct(&extcomin, &pin_P0_06);
     common_hal_digitalio_digitalinout_switch_to_output(&extcomin, true, DRIVE_MODE_PUSH_PULL);
@@ -25,7 +28,11 @@ void board_init(void) {
     common_hal_digitalio_digitalinout_construct(&display_on, &pin_P0_07);
     common_hal_digitalio_digitalinout_switch_to_output(&display_on, true, DRIVE_MODE_PUSH_PULL);
 
-    sharpdisplay_framebuffer_obj_t *fb = &allocate_display_bus()->sharpdisplay;
+    sharpdisplay_framebuffer_obj_t *fb = displayio_native_init(&board_display_bus, &sharpdisplay_framebuffer_protocol, &sharpdisplay_framebuffer_type, 0, MP_OBJ_NULL, true);
+
+    if (fb == NULL) {
+        return;
+    }
     fb->base.type = &sharpdisplay_framebuffer_type;
 
     busio_spi_obj_t *spi = &fb->inline_bus;
@@ -33,8 +40,10 @@ void board_init(void) {
 
     common_hal_sharpdisplay_framebuffer_construct(fb, spi, &pin_P0_05, 500000, 176, 176, true);
 
-    primary_display_t *display = allocate_display();
-    framebufferio_framebufferdisplay_obj_t *self = &display->framebuffer_display;
+    framebufferio_framebufferdisplay_obj_t *self = displayio_native_init(&board_display, &framebufferio_framebufferdisplay_protocol, &framebufferio_framebufferdisplay_type, 0, MP_OBJ_FROM_PTR(fb), true);
+    if (self == NULL) {
+        return;
+    }
     self->base.type = &framebufferio_framebufferdisplay_type;
     common_hal_framebufferio_framebufferdisplay_construct(self, fb, 0, true);
 }

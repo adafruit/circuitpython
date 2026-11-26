@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 
 #include "shared-bindings/board/__init__.h"
+
+#include "board.h"
 #include "shared-module/displayio/__init__.h"
 
 CIRCUITPY_BOARD_BUS_SINGLETON(grove_i2c, i2c, 1)
@@ -50,7 +52,6 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_LCD_RST), MP_ROM_PTR(&pin_GPIO12) },
     { MP_ROM_QSTR(MP_QSTR_LCD_CS), MP_ROM_PTR(&pin_GPIO5) },
     { MP_ROM_QSTR(MP_QSTR_LCD_BL), MP_ROM_PTR(&pin_GPIO27) },
-    { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&displays[0].display)},
 
     // Battery voltage sense
     { MP_ROM_QSTR(MP_QSTR_G38), MP_ROM_PTR(&pin_GPIO38) },
@@ -74,5 +75,6 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     // Power hold
     { MP_ROM_QSTR(MP_QSTR_G4), MP_ROM_PTR(&pin_GPIO4) },
     { MP_ROM_QSTR(MP_QSTR_HOLD), MP_ROM_PTR(&pin_GPIO4) },
+    { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&board_display) },
 };
 MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);

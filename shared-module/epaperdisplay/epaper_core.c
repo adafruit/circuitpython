@@ -19,12 +19,86 @@
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/time/__init__.h"
 #include "shared-module/epaperdisplay/lag_drive.h"
+#include "shared-module/displayio/lifetime.h"
 #include "supervisor/port.h"
 #include "supervisor/shared/tick.h"
 
 #include <stdint.h>
+#include <string.h>
 
 #define DELAY 0x80
+
+#if CIRCUITPY_EPAPERDISPLAY_FAST
+// The proxy's VM state holds the held exception so the GC keeps it alive.
+static epaperdisplay_epaperdisplay_vm_t *vm_state(epaperdisplay_epaper_core_t *self) {
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    // The display is itself a GC object; lag.held_exception is already scanned.
+    (void)self;
+    return NULL;
+    #else
+    epaperdisplay_epaperdisplay_obj_t *display = self->display;
+    if (display == NULL || display->link.native.proxy == MP_OBJ_NULL) {
+        return NULL;
+    }
+    displayio_proxy_t *proxy = MP_OBJ_TO_PTR(display->link.native.proxy);
+    return proxy->vm;
+    #endif
+}
+
+void epaperdisplay_epaper_core_set_held_exception(epaperdisplay_epaper_core_t *self, mp_obj_t exception) {
+    self->lag.held_exception = exception;
+    epaperdisplay_epaperdisplay_vm_t *vm = vm_state(self);
+    if (vm != NULL) {
+        vm->held_exception = exception;
+    }
+}
+#endif
+
+// Move VM-owned sequence bytes to native storage as soon as they are set.
+// Board-provided static bytes objects can be referenced directly instead.
+static void epaperdisplay_store_sequences(epaperdisplay_epaper_core_t *self,
+    const uint8_t *start, size_t start_len, const uint8_t *stop, size_t stop_len,
+    const uint8_t *refresh, size_t refresh_len,
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
+    const uint8_t *clean, size_t clean_len,
+    #endif
+    bool copy) {
+    size_t total = start_len + stop_len + refresh_len;
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
+    total += clean_len;
+    #endif
+    uint8_t *storage = NULL;
+    if (copy && total != 0) {
+        storage = port_malloc(total, false);
+        if (storage == NULL) {
+            mp_raise_msg(&mp_type_MemoryError, NULL);
+        }
+    }
+    size_t offset = 0;
+    #define STORE_SEQUENCE(field, data, len) \
+    if (copy && (len) != 0) { \
+        memcpy(storage + offset, (data), (len)); \
+        self->field = storage + offset; \
+        offset += (len); \
+    } else { \
+        self->field = (data); \
+    } \
+    self->field##_len = (len)
+    STORE_SEQUENCE(start_sequence, start, start_len);
+    STORE_SEQUENCE(stop_sequence, stop, stop_len);
+    STORE_SEQUENCE(refresh_sequence, refresh, refresh_len);
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
+    STORE_SEQUENCE(clean_sequence, clean, clean_len);
+    #endif
+#undef STORE_SEQUENCE
+    port_free(self->sequence_storage);
+    self->sequence_storage = storage;
+}
+
+void epaperdisplay_epaper_core_release_sequences(epaperdisplay_epaper_core_t *self) {
+    port_free(self->sequence_storage);
+    self->sequence_storage = NULL;
+}
 
 void epaperdisplay_epaper_core_construct(epaperdisplay_epaper_core_t *self,
     const epaperdisplay_construct_args_t *args) {
@@ -76,8 +150,11 @@ void epaperdisplay_epaper_core_construct(epaperdisplay_epaper_core_t *self,
     self->lag.commit = LAG_COMMIT_NONE;
     self->lag.holding_interrupts = false;
     self->lag.held_exception = MP_OBJ_NULL;
-    self->clean_sequence = args->clean_sequence;
-    self->clean_sequence_len = args->clean_sequence_len;
+    self->sequence_storage = NULL;
+    mp_buffer_info_t clean_bufinfo = {0};
+    if (args->clean_sequence_obj != mp_const_none) {
+        mp_get_buffer_raise(args->clean_sequence_obj, &clean_bufinfo, MP_BUFFER_READ);
+    }
     self->write_previous_ram_command = args->write_previous_ram_command;
     #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
@@ -91,13 +168,31 @@ void epaperdisplay_epaper_core_construct(epaperdisplay_epaper_core_t *self,
     self->milliseconds_per_frame = args->seconds_per_frame * 1000;
     self->chip_select = args->always_toggle_chip_select ? CHIP_SELECT_TOGGLE_EVERY_BYTE : CHIP_SELECT_UNTOUCHED;
     self->grayscale = grayscale;
-    self->start_sequence = args->start_sequence;
-    self->start_sequence_len = args->start_sequence_len;
+    mp_buffer_info_t start_bufinfo;
+    mp_get_buffer_raise(args->start_sequence_obj, &start_bufinfo, MP_BUFFER_READ);
     self->start_up_time_ms = args->start_up_time * 1000;
-    self->stop_sequence = args->stop_sequence;
-    self->stop_sequence_len = args->stop_sequence_len;
-    self->refresh_sequence = args->refresh_sequence;
-    self->refresh_sequence_len = args->refresh_sequence_len;
+    mp_buffer_info_t stop_bufinfo;
+    mp_get_buffer_raise(args->stop_sequence_obj, &stop_bufinfo, MP_BUFFER_READ);
+    mp_buffer_info_t refresh_bufinfo;
+    if (args->refresh_sequence_obj == mp_const_none) {
+        refresh_bufinfo.buf = self->refresh_command;
+        refresh_bufinfo.len = args->two_byte_sequence_length ? 3 : 2;
+    } else {
+        mp_get_buffer_raise(args->refresh_sequence_obj, &refresh_bufinfo, MP_BUFFER_READ);
+    }
+    bool copy_sequences = gc_ptr_on_heap(MP_OBJ_TO_PTR(args->start_sequence_obj)) ||
+        gc_ptr_on_heap(MP_OBJ_TO_PTR(args->stop_sequence_obj)) ||
+        gc_ptr_on_heap(MP_OBJ_TO_PTR(args->refresh_sequence_obj));
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
+    copy_sequences = copy_sequences || gc_ptr_on_heap(MP_OBJ_TO_PTR(args->clean_sequence_obj));
+    #endif
+    epaperdisplay_store_sequences(self,
+        start_bufinfo.buf, start_bufinfo.len, stop_bufinfo.buf, stop_bufinfo.len,
+        refresh_bufinfo.buf, refresh_bufinfo.len,
+        #if CIRCUITPY_EPAPERDISPLAY_FAST
+        clean_bufinfo.buf, clean_bufinfo.len,
+        #endif
+        copy_sequences);
     #if CIRCUITPY_EPAPERDISPLAY_FAST
     self->fast = args->fast;
     self->awake = false;
@@ -160,7 +255,7 @@ bool epaperdisplay_epaper_core_interrupted(epaperdisplay_epaper_core_t *self) {
     }
     if (mp_hal_is_interrupted()) {
         if (self->lag.held_exception == MP_OBJ_NULL) {
-            self->lag.held_exception = MP_STATE_THREAD(mp_pending_exception);
+            epaperdisplay_epaper_core_set_held_exception(self, MP_STATE_THREAD(mp_pending_exception));
         }
         MP_STATE_THREAD(mp_pending_exception) = MP_OBJ_NULL;
     }
@@ -328,15 +423,22 @@ void epaperdisplay_epaper_core_change_refresh_mode_parameters(epaperdisplay_epap
         self->lag.force_full = true;
     }
     #endif // CIRCUITPY_EPAPERDISPLAY_FAST
-    self->start_sequence = (uint8_t *)start_sequence->buf;
-    self->start_sequence_len = start_sequence->len;
+    const uint8_t *refresh = self->refresh_sequence;
+    size_t refresh_len = self->refresh_sequence_len;
     #if CIRCUITPY_EPAPERDISPLAY_FAST
     // NULL keeps the current refresh sequence.
     if (refresh_sequence != NULL) {
-        self->refresh_sequence = (uint8_t *)refresh_sequence->buf;
-        self->refresh_sequence_len = refresh_sequence->len;
+        refresh = refresh_sequence->buf;
+        refresh_len = refresh_sequence->len;
     }
     #endif
+    epaperdisplay_store_sequences(self,
+        start_sequence->buf, start_sequence->len, self->stop_sequence, self->stop_sequence_len,
+        refresh, refresh_len,
+        #if CIRCUITPY_EPAPERDISPLAY_FAST
+        self->clean_sequence, self->clean_sequence_len,
+        #endif
+        true);
     self->milliseconds_per_frame = seconds_per_frame * 1000;
     #if CIRCUITPY_EPAPERDISPLAY_FAST
     self->needs_start = true;
@@ -344,9 +446,9 @@ void epaperdisplay_epaper_core_change_refresh_mode_parameters(epaperdisplay_epap
 }
 
 #if CIRCUITPY_EPAPERDISPLAY_FAST
-// For a panel kept awake. Ctrl-C raises from a send in progress, and that transaction is still
-// open. The caller still has things to do first, so the interrupt raises later.
-void epaperdisplay_epaper_core_send_stop_sequence_guarded(epaperdisplay_epaper_core_t *self) {
+// Ctrl-C raises from a send in progress, and that transaction is still open. The caller may still
+// have things to do first, so optionally schedule the interrupt to raise later.
+static void send_stop_sequence_common(epaperdisplay_epaper_core_t *self, bool schedule_exception) {
     nlr_buf_t nlr;
     if (nlr_push(&nlr) == 0) {
         epaperdisplay_epaper_core_send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
@@ -355,8 +457,20 @@ void epaperdisplay_epaper_core_send_stop_sequence_guarded(epaperdisplay_epaper_c
         if (!displayio_display_bus_is_free(&self->bus)) {
             displayio_display_bus_end_transaction(&self->bus);
         }
-        mp_sched_exception(nlr.ret_val);
+        if (schedule_exception) {
+            mp_sched_exception(nlr.ret_val);
+        }
     }
+}
+
+// For a panel kept awake, where the caller still has things to do first.
+void epaperdisplay_epaper_core_send_stop_sequence_guarded(epaperdisplay_epaper_core_t *self) {
+    send_stop_sequence_common(self, true);
+}
+
+// Deinit must not raise, so swallow an interrupt instead.
+void epaperdisplay_epaper_core_send_stop_sequence_noexcept(epaperdisplay_epaper_core_t *self) {
+    send_stop_sequence_common(self, false);
 }
 #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
@@ -386,10 +500,6 @@ bool epaperdisplay_epaper_core_wait_for_update_end(epaperdisplay_epaper_core_t *
     return !busy;
 }
 #endif // CIRCUITPY_EPAPERDISPLAY_FAST
-
-mp_obj_t epaperdisplay_epaper_core_get_bus(epaperdisplay_epaper_core_t *self) {
-    return self->bus.bus;
-}
 
 uint16_t epaperdisplay_epaper_core_get_rotation(epaperdisplay_epaper_core_t *self) {
     return self->core.rotation;
@@ -440,39 +550,11 @@ bool epaperdisplay_epaper_core_get_busy(epaperdisplay_epaper_core_t *self) {
 }
 
 #if CIRCUITPY_EPAPERDISPLAY_FAST
-void epaperdisplay_epaper_core_prepare_release(epaperdisplay_epaper_core_t *self) {
-    if (self->lag.frames == 0 || (!self->awake && !self->lag.state_lost)) {
-        return;
-    }
-    const uint64_t deadline = supervisor_ticks_ms64() + EPAPER_WAIT_TIMEOUT_MS;
-    while (!displayio_display_bus_is_free(&self->bus)) {
-        mp_handle_pending(true);
-        if (supervisor_ticks_ms64() > deadline) {
-            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q in use"), MP_QSTR_display_bus);
-        }
-        RUN_BACKGROUND_TASKS;
-    }
-}
-#endif // CIRCUITPY_EPAPERDISPLAY_FAST
-
-#if CIRCUITPY_EPAPERDISPLAY_FAST
 void epaperdisplay_epaper_core_end_held_bus(epaperdisplay_epaper_core_t *self) {
-    // The VM is over, so whatever holds the bus can never let it go: end it here.
+    // Whatever holds the bus can no longer let it go between VMs: end it here.
     if (self->fast && !displayio_display_bus_is_free(&self->bus)) {
         displayio_display_bus_end_transaction(&self->bus);
         self->lag.bus_held = false;
     }
 }
 #endif // CIRCUITPY_EPAPERDISPLAY_FAST
-
-void epaperdisplay_epaper_core_collect_ptrs(epaperdisplay_epaper_core_t *self) {
-    displayio_display_core_collect_ptrs(&self->core);
-    displayio_display_bus_collect_ptrs(&self->bus);
-    gc_collect_ptr((void *)self->start_sequence);
-    gc_collect_ptr((void *)self->stop_sequence);
-    gc_collect_ptr((void *)self->refresh_sequence);
-    #if CIRCUITPY_EPAPERDISPLAY_FAST
-    gc_collect_ptr((void *)self->clean_sequence);
-    gc_collect_ptr(self->lag.held_exception);
-    #endif // CIRCUITPY_EPAPERDISPLAY_FAST
-}

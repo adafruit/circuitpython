@@ -265,11 +265,8 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     }
     #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
-    // Check the bus before taking a display slot: construct would raise after the slot is in use.
     displayio_display_bus_validate(display_bus);
-
-    primary_display_t *disp = allocate_display_or_raise();
-    epaperdisplay_epaperdisplay_obj_t *self = &disp->epaper_display;
+    mp_obj_t native_bus = MP_OBJ_FROM_PTR(displayio_proxy_native(display_bus, mp_obj_get_type(display_bus)));
 
     mp_float_t refresh_time = mp_obj_get_float(args[ARG_refresh_time].u_obj);
     mp_float_t seconds_per_frame = mp_obj_get_float(args[ARG_seconds_per_frame].u_obj);
@@ -291,32 +288,20 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     bool two_byte_sequence_length = args[ARG_two_byte_sequence_length].u_bool;
 
     mp_obj_t refresh_obj = args[ARG_refresh_display_command].u_obj;
-    const uint8_t *refresh_buf;
     mp_buffer_info_t refresh_bufinfo;
-    size_t refresh_buf_len = 0;
     mp_int_t refresh_command;
+    bool refresh_is_int = false;
     if (mp_obj_get_int_maybe(refresh_obj, &refresh_command)) {
-        uint8_t *command_buf = m_malloc_without_collect(3);
-        command_buf[0] = refresh_command;
-        command_buf[1] = 0;
-        command_buf[2] = 0;
-        refresh_buf = command_buf;
-        refresh_buf_len = two_byte_sequence_length? 3: 2;
-    } else if (mp_get_buffer(refresh_obj, &refresh_bufinfo, MP_BUFFER_READ)) {
-        refresh_buf = refresh_bufinfo.buf;
-        refresh_buf_len = refresh_bufinfo.len;
-    } else {
+        refresh_is_int = true;
+    } else if (!mp_get_buffer(refresh_obj, &refresh_bufinfo, MP_BUFFER_READ)) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_refresh_display_command);
     }
 
-    self->base.type = &epaperdisplay_epaperdisplay_type;
     epaperdisplay_construct_args_t construct_args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
-    construct_args.bus = display_bus;
-    construct_args.start_sequence = start_bufinfo.buf;
-    construct_args.start_sequence_len = start_bufinfo.len;
+    construct_args.bus = native_bus;
+    construct_args.start_sequence_obj = args[ARG_start_sequence].u_obj;
     construct_args.start_up_time = start_up_time;
-    construct_args.stop_sequence = stop_bufinfo.buf;
-    construct_args.stop_sequence_len = stop_bufinfo.len;
+    construct_args.stop_sequence_obj = args[ARG_stop_sequence].u_obj;
     construct_args.width = args[ARG_width].u_int;
     construct_args.height = args[ARG_height].u_int;
     construct_args.ram_width = args[ARG_ram_width].u_int;
@@ -337,8 +322,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     #endif
     construct_args.highlight_color = highlight_color;
     construct_args.highlight_color2 = highlight_color2;
-    construct_args.refresh_sequence = refresh_buf;
-    construct_args.refresh_sequence_len = refresh_buf_len;
+    construct_args.refresh_sequence_obj = refresh_is_int ? mp_const_none : refresh_obj;
     construct_args.refresh_time = refresh_time;
     construct_args.busy_pin = busy_pin;
     construct_args.busy_state = args[ARG_busy_state].u_bool;
@@ -355,28 +339,29 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     if (args[ARG_clean_sequence].u_obj != mp_const_none) {
         mp_buffer_info_t clean_bufinfo;
         mp_get_buffer_raise(args[ARG_clean_sequence].u_obj, &clean_bufinfo, MP_BUFFER_READ);
-        construct_args.clean_sequence = clean_bufinfo.buf;
-        construct_args.clean_sequence_len = clean_bufinfo.len;
+        construct_args.clean_sequence_obj = args[ARG_clean_sequence].u_obj;
     }
     #endif
-    common_hal_epaperdisplay_epaperdisplay_construct(self, &construct_args);
-
-    return self;
+    epaperdisplay_epaperdisplay_obj_t *self = displayio_native_init(NULL, &epaperdisplay_epaperdisplay_protocol,
+        &epaperdisplay_epaperdisplay_type, sizeof(*self), native_bus, false);
+    if (refresh_is_int) {
+        self->epaper.refresh_command[0] = refresh_command;
+    }
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        common_hal_epaperdisplay_epaperdisplay_construct(self, &construct_args);
+        mp_obj_t proxy = displayio_register(MP_OBJ_FROM_PTR(self));
+        nlr_pop();
+        return proxy;
+    }
+    displayio_construct_failed(MP_OBJ_FROM_PTR(self));
+    nlr_jump(nlr.ret_val);
 }
 
 // Helper to ensure we have the native super class instead of a subclass.
 // Raises if the display has been released.
 static epaperdisplay_epaperdisplay_obj_t *native_display(mp_obj_t display_obj) {
-    mp_obj_t native_display = mp_obj_cast_to_native_base(display_obj, &epaperdisplay_epaperdisplay_type);
-    if (native_display == MP_OBJ_NULL) {
-        raise_deinited_error();
-    }
-    mp_obj_assert_native_inited(native_display);
-    epaperdisplay_epaperdisplay_obj_t *self = MP_OBJ_TO_PTR(native_display);
-    if (self->base.type != &epaperdisplay_epaperdisplay_type) {
-        raise_deinited_error();
-    }
-    return self;
+    return displayio_proxy_native(display_obj, &epaperdisplay_epaperdisplay_type);
 }
 
 //|     def deinit(self) -> None:
@@ -385,23 +370,28 @@ static epaperdisplay_epaperdisplay_obj_t *native_display(mp_obj_t display_obj) {
 //|         A `busio.SPI` or `busio.I2C` object that you passed to the display bus is not deinitialized.
 //|
 //|         If a refresh is in progress, this waits for it to finish, which may take seconds.
-//|         If the display uses ``lag_frames`` and can't get its bus, this waits up to 30 seconds.
-//|         It then raises `RuntimeError` and leaves the display as it was.
+//|         If the display uses ``lag_frames`` and can't get its bus, this waits up to 30 seconds
+//|         for the panel and bus before continuing. It does not raise.
 //|
 //|         To release a built-in display, or a display kept from an earlier run,
 //|         use ``supervisor.runtime.display.deinit()``.
-//|         As of CircuitPython 11.0.0, this replaces `displayio.release_displays()`, which is deprecated.
 //|         """
 //|         ...
 //|
 static mp_obj_t epaperdisplay_epaperdisplay_obj_deinit(mp_obj_t self_in) {
-    mp_obj_t native_display = mp_obj_cast_to_native_base(self_in, &epaperdisplay_epaperdisplay_type);
-    if (native_display != MP_OBJ_NULL) {
-        common_hal_displayio_deinit_display(native_display);
+    mp_obj_t native = displayio_native_obj(self_in, &epaperdisplay_epaperdisplay_type);
+    if (native != MP_OBJ_NULL) {
+        displayio_display_deinit(native);
     }
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(epaperdisplay_epaperdisplay_deinit_obj, epaperdisplay_epaperdisplay_obj_deinit);
+
+static mp_obj_t epaperdisplay_epaperdisplay_obj___del__(mp_obj_t self_in) {
+    displayio_display_proxy_finalise(MP_OBJ_TO_PTR(self_in));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(epaperdisplay_epaperdisplay___del___obj, epaperdisplay_epaperdisplay_obj___del__);
 
 // Undocumented show() implementation with a friendly error message.
 static mp_obj_t epaperdisplay_epaperdisplay_obj_show(mp_obj_t self_in, mp_obj_t group_in) {
@@ -463,7 +453,8 @@ static mp_obj_t epaperdisplay_epaperdisplay_update_refresh_mode(size_t n_args, c
     #endif
 
     // Update parameters
-    epaperdisplay_epaperdisplay_change_refresh_mode_parameters(self, &start_sequence, refresh_sequence_ptr, seconds_per_frame);
+    epaperdisplay_epaperdisplay_change_refresh_mode_parameters(self, &start_sequence, refresh_sequence_ptr,
+        seconds_per_frame);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(epaperdisplay_epaperdisplay_update_refresh_mode_obj, 1, epaperdisplay_epaperdisplay_update_refresh_mode);
@@ -638,6 +629,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_obj_set_root_group(mp_obj_t self_in,
     }
 
     common_hal_epaperdisplay_epaperdisplay_set_root_group(self, group);
+    displayio_display_set_root_group_reference(MP_OBJ_FROM_PTR(self), group_in);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(epaperdisplay_epaperdisplay_set_root_group_obj, epaperdisplay_epaperdisplay_obj_set_root_group);
@@ -648,6 +640,7 @@ MP_PROPERTY_GETSET(epaperdisplay_epaperdisplay_root_group_obj,
 
 static const mp_rom_map_elem_t epaperdisplay_epaperdisplay_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&epaperdisplay_epaperdisplay_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&epaperdisplay_epaperdisplay___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_show), MP_ROM_PTR(&epaperdisplay_epaperdisplay_show_obj) },
     { MP_ROM_QSTR(MP_QSTR_update_refresh_mode), MP_ROM_PTR(&epaperdisplay_epaperdisplay_update_refresh_mode_obj) },
     { MP_ROM_QSTR(MP_QSTR_refresh), MP_ROM_PTR(&epaperdisplay_epaperdisplay_refresh_obj) },

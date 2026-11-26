@@ -21,7 +21,7 @@ CIRCUITPY_KEYPAD_KEYMATRIX = 0
 
 # bonus, can be disabled if needed
 CIRCUITPY_MATH = 1
-CIRCUITPY_ANALOGIO = 1
+CIRCUITPY_ANALOGIO = 0
 CIRCUITPY_NEOPIXEL_WRITE = 1
 
 CIRCUITPY_SAMD = 0
@@ -66,3 +66,6 @@ CIRCUITPY_RAINBOWIO = 0
 CIRCUITPY_DISPLAY_FONT = $(TOP)/ports/atmel-samd/boards/ugame10/brutalist-6.bdf
 OPTIMIZATION_FLAGS = -Os
 FROZEN_MPY_DIRS += $(TOP)/frozen/pew-pewpew-lcd
+
+# Keep full display lifetime because this board has a built-in display.
+CIRCUITPY_DISPLAY_LIFETIME_SIMPLE = 0

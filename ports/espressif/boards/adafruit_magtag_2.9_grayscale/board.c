@@ -277,6 +277,9 @@ static display_type_t detect_display_type(void) {
     }
 }
 
+static fourwire_fourwire_obj_t board_display_bus;
+epaperdisplay_epaperdisplay_obj_t board_display;
+
 void board_init(void) {
     // GPIO16 (SPEAKER_ENABLE) has an external pull-down that keeps the speaker
     // off. Default to no internal pull, so as not to fight it.
@@ -284,7 +287,11 @@ void board_init(void) {
 
     display_type_t display_type = detect_display_type();
 
-    fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
+    fourwire_fourwire_obj_t *bus = displayio_native_init(&board_display_bus, &fourwire_fourwire_protocol, &fourwire_fourwire_type, 0, MP_OBJ_NULL, true);
+
+    if (bus == NULL) {
+        return;
+    }
     busio_spi_obj_t *spi = &bus->inline_bus;
     common_hal_busio_spi_construct(spi, &pin_GPIO36, &pin_GPIO35, NULL, false);
 
@@ -298,16 +305,20 @@ void board_init(void) {
         0, // Polarity
         0); // Phase
 
-    epaperdisplay_epaperdisplay_obj_t *display = &allocate_display()->epaper_display;
+    epaperdisplay_epaperdisplay_obj_t *display = displayio_native_init(&board_display, &epaperdisplay_epaperdisplay_protocol, &epaperdisplay_epaperdisplay_type, 0, MP_OBJ_FROM_PTR(bus), true);
+
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &epaperdisplay_epaperdisplay_type;
 
     if (display_type == DISPLAY_IL0373) {
         epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
         args.bus = bus;
-        args.start_sequence = il0373_display_start_sequence;
-        args.start_sequence_len = sizeof(il0373_display_start_sequence);
-        args.stop_sequence = il0373_display_stop_sequence;
-        args.stop_sequence_len = sizeof(il0373_display_stop_sequence);
+        static MP_DEFINE_BYTES_OBJ(il0373_display_start_sequence_obj, il0373_display_start_sequence, sizeof(il0373_display_start_sequence));
+        args.start_sequence_obj = MP_OBJ_FROM_PTR(&il0373_display_start_sequence_obj);
+        static MP_DEFINE_BYTES_OBJ(il0373_display_stop_sequence_obj, il0373_display_stop_sequence, sizeof(il0373_display_stop_sequence));
+        args.stop_sequence_obj = MP_OBJ_FROM_PTR(&il0373_display_stop_sequence_obj);
         args.width = 296;
         args.height = 128;
         args.ram_width = 160;
@@ -315,8 +326,8 @@ void board_init(void) {
         args.rotation = 270;
         args.write_black_ram_command = 0x10;
         args.write_color_ram_command = 0x13;
-        args.refresh_sequence = il0373_display_refresh_sequence;
-        args.refresh_sequence_len = sizeof(il0373_display_refresh_sequence);
+        static MP_DEFINE_BYTES_OBJ(il0373_display_refresh_sequence_obj, il0373_display_refresh_sequence, sizeof(il0373_display_refresh_sequence));
+        args.refresh_sequence_obj = MP_OBJ_FROM_PTR(&il0373_display_refresh_sequence_obj);
         args.refresh_time = 1.0;
         args.busy_pin = &pin_GPIO5;
         args.seconds_per_frame = 5.0;
@@ -327,14 +338,14 @@ void board_init(void) {
         args.bus = bus;
         if (display_type == DISPLAY_SSD1680_COLSTART_8) {
             args.colstart = 8;
-            args.start_sequence = ssd1680_fpc7519_display_start_sequence;
-            args.start_sequence_len = sizeof(ssd1680_fpc7519_display_start_sequence);
+            static MP_DEFINE_BYTES_OBJ(ssd1680_fpc7519_display_start_sequence_obj, ssd1680_fpc7519_display_start_sequence, sizeof(ssd1680_fpc7519_display_start_sequence));
+            args.start_sequence_obj = MP_OBJ_FROM_PTR(&ssd1680_fpc7519_display_start_sequence_obj);
         } else {
-            args.start_sequence = ssd1680_display_start_sequence;
-            args.start_sequence_len = sizeof(ssd1680_display_start_sequence);
+            static MP_DEFINE_BYTES_OBJ(ssd1680_display_start_sequence_obj, ssd1680_display_start_sequence, sizeof(ssd1680_display_start_sequence));
+            args.start_sequence_obj = MP_OBJ_FROM_PTR(&ssd1680_display_start_sequence_obj);
         }
-        args.stop_sequence = ssd1680_display_stop_sequence;
-        args.stop_sequence_len = sizeof(ssd1680_display_stop_sequence);
+        static MP_DEFINE_BYTES_OBJ(ssd1680_display_stop_sequence_obj, ssd1680_display_stop_sequence, sizeof(ssd1680_display_stop_sequence));
+        args.stop_sequence_obj = MP_OBJ_FROM_PTR(&ssd1680_display_stop_sequence_obj);
         args.width = 296;
         args.height = 128;
         args.ram_width = 250;
@@ -346,8 +357,8 @@ void board_init(void) {
         args.set_current_row_command = 0x4f;
         args.write_black_ram_command = 0x24;
         args.write_color_ram_command = 0x26;
-        args.refresh_sequence = ssd1680_display_refresh_sequence;
-        args.refresh_sequence_len = sizeof(ssd1680_display_refresh_sequence);
+        static MP_DEFINE_BYTES_OBJ(ssd1680_display_refresh_sequence_obj, ssd1680_display_refresh_sequence, sizeof(ssd1680_display_refresh_sequence));
+        args.refresh_sequence_obj = MP_OBJ_FROM_PTR(&ssd1680_display_refresh_sequence_obj);
         args.refresh_time = 1.0;
         args.busy_pin = &pin_GPIO5;
         args.busy_state = true;
@@ -383,8 +394,8 @@ bool espressif_board_reset_pin_number(gpio_num_t pin_number) {
 }
 
 void board_deinit(void) {
-    epaperdisplay_epaperdisplay_obj_t *display = &displays[0].epaper_display;
-    if (display->base.type == &epaperdisplay_epaperdisplay_type) {
+    epaperdisplay_epaperdisplay_obj_t *display = MP_OBJ_TO_PTR(displayio_board_display_native());
+    if (display != NULL && display->base.type == &epaperdisplay_epaperdisplay_type) {
         size_t i = 0;
         while (common_hal_epaperdisplay_epaperdisplay_get_busy(display)) {
             RUN_BACKGROUND_TASKS;

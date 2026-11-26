@@ -36,3 +36,6 @@ CIRCUITPY_BUSDEVICE = 0
 FROZEN_MPY_DIRS += $(TOP)/frozen/circuitpython-stage/ugame10
 
 CIRCUITPY_DISPLAY_FONT = $(TOP)/ports/atmel-samd/boards/ugame10/brutalist-6.bdf
+
+# Keep full display lifetime because this board has a built-in display.
+CIRCUITPY_DISPLAY_LIFETIME_SIMPLE = 0

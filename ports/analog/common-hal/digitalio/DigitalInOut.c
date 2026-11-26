@@ -18,6 +18,19 @@ bool common_hal_digitalio_digitalinout_deinited(digitalio_digitalinout_obj_t *se
     return self->pin == NULL;
 }
 
+bool common_hal_digitalio_digitalinout_is_moveable(digitalio_digitalinout_obj_t *self) {
+    return !common_hal_digitalio_digitalinout_deinited(self);
+}
+
+bool common_hal_digitalio_digitalinout_move(digitalio_digitalinout_obj_t *self, digitalio_digitalinout_obj_t *destination) {
+    if (!common_hal_digitalio_digitalinout_is_moveable(self)) {
+        return false;
+    }
+    *destination = *self;
+    self->pin = NULL;
+    return true;
+}
+
 digitalinout_result_t common_hal_digitalio_digitalinout_construct(
     digitalio_digitalinout_obj_t *self, const mcu_pin_obj_t *pin) {
 

@@ -24,6 +24,10 @@ extern pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *sel
     bool variable_frequency);
 extern void common_hal_pwmio_pwmout_deinit(pwmio_pwmout_obj_t *self);
 extern bool common_hal_pwmio_pwmout_deinited(pwmio_pwmout_obj_t *self);
+// True when the live object can be relocated. move() returns false without
+// changing either object when relocation fails.
+extern bool common_hal_pwmio_pwmout_is_moveable(pwmio_pwmout_obj_t *self);
+extern bool common_hal_pwmio_pwmout_move(pwmio_pwmout_obj_t *self, pwmio_pwmout_obj_t *destination);
 extern void common_hal_pwmio_pwmout_set_duty_cycle(pwmio_pwmout_obj_t *self, uint16_t duty);
 extern uint16_t common_hal_pwmio_pwmout_get_duty_cycle(pwmio_pwmout_obj_t *self);
 extern void common_hal_pwmio_pwmout_set_frequency(pwmio_pwmout_obj_t *self, uint32_t frequency);

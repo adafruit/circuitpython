@@ -182,6 +182,20 @@ void common_hal_busio_i2c_mark_deinit(busio_i2c_obj_t *self) {
     self->scl = NULL;
 }
 
+bool common_hal_busio_i2c_is_moveable(busio_i2c_obj_t *self) {
+    return !common_hal_busio_i2c_deinited(self) && !self->has_lock;
+}
+
+bool common_hal_busio_i2c_move(busio_i2c_obj_t *self, busio_i2c_obj_t *destination) {
+    if (!common_hal_busio_i2c_is_moveable(self)) {
+        return false;
+    }
+    *destination = *self;
+    MP_STATE_PORT(cpy_i2c_obj_all)[destination->sda->periph_index - 1] = destination;
+    common_hal_busio_i2c_mark_deinit(self);
+    return true;
+}
+
 bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
     return HAL_I2C_IsDeviceReady(&(self->handle), (uint16_t)(addr << 1), 2, 2) == HAL_OK;
 }

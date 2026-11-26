@@ -12,6 +12,7 @@
 #include "py/runtime.h"
 #include "shared/runtime/interrupt_char.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
+#include "shared-module/displayio/__init__.h"
 #include "supervisor/port_heap.h"
 #include "supervisor/shared/tick.h"
 
@@ -69,7 +70,7 @@ void epaperdisplay_lag_release_interrupts(epaperdisplay_epaper_core_t *self) {
     self->lag.busy_deadline = 0;
     if (self->lag.held_exception != MP_OBJ_NULL) {
         mp_sched_exception(self->lag.held_exception);
-        self->lag.held_exception = MP_OBJ_NULL;
+        epaperdisplay_epaper_core_set_held_exception(self, MP_OBJ_NULL);
     }
 }
 
@@ -618,7 +619,7 @@ static void lag_after_raise(epaperdisplay_epaper_core_t *self) {
 MP_NORETURN void epaperdisplay_lag_raise(epaperdisplay_epaper_core_t *self, mp_obj_t raised) {
     if (self->lag.held_exception != MP_OBJ_NULL) {
         raised = self->lag.held_exception;
-        self->lag.held_exception = MP_OBJ_NULL;
+        epaperdisplay_epaper_core_set_held_exception(self, MP_OBJ_NULL);
     }
     lag_after_raise(self);
     nlr_jump(raised);
@@ -736,7 +737,7 @@ void epaperdisplay_lag_shutdown(epaperdisplay_epaper_core_t *self) {
             lag_abandon_step(self);
             raises++;
             if (self->lag.held_exception == MP_OBJ_NULL) {
-                self->lag.held_exception = nlr.ret_val;
+                epaperdisplay_epaper_core_set_held_exception(self, nlr.ret_val);
             }
         }
     }
@@ -762,7 +763,7 @@ void epaperdisplay_lag_shutdown(epaperdisplay_epaper_core_t *self) {
         } else {
             lag_abandon_step(self);
             if (self->lag.held_exception == MP_OBJ_NULL) {
-                self->lag.held_exception = nlr.ret_val;
+                epaperdisplay_epaper_core_set_held_exception(self, nlr.ret_val);
             }
         }
         self->lag.last_try = false;

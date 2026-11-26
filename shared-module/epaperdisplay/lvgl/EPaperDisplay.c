@@ -151,6 +151,8 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
     if (rotation != 0) {
         common_hal_epaperdisplay_epaperdisplay_set_rotation(self, rotation);
     }
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 bool common_hal_epaperdisplay_epaperdisplay_set_root_group(epaperdisplay_epaperdisplay_obj_t *self, displayio_group_t *root_group) {
@@ -576,7 +578,7 @@ void common_hal_epaperdisplay_epaperdisplay_set_rotation(epaperdisplay_epaperdis
         self->dirty_full = true;
         displayio_lvgl_unlock_with_cleanup();
     }
-    if (self == &displays[0].epaper_display) {
+    if (displayio_is_primary_display(self)) {
         supervisor_stop_terminal();
         supervisor_start_terminal(self->epaper.core.width, self->epaper.core.height);
     }
@@ -827,20 +829,16 @@ void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self) {
         epaperdisplay_epaper_core_wait_for_busy(&self->epaper);
 
         // Run stop sequence but don't wait for busy after it, because some panels set busy when
-        // sleeping.
+        // sleeping. Deinit must not raise, so an interrupt is swallowed.
         #if CIRCUITPY_EPAPERDISPLAY_FAST
-        if (self->epaper.fast) {
-            epaperdisplay_epaper_core_send_stop_sequence_guarded(&self->epaper);
-        } else {
-            epaperdisplay_epaper_core_send_command_sequence(&self->epaper, false, self->epaper.stop_sequence, self->epaper.stop_sequence_len);
-        }
+        epaperdisplay_epaper_core_send_stop_sequence_noexcept(&self->epaper);
         #else
         epaperdisplay_epaper_core_send_command_sequence(&self->epaper, false, self->epaper.stop_sequence, self->epaper.stop_sequence_len);
         #endif
     }
     #if CIRCUITPY_EPAPERDISPLAY_FAST
     else if (self->epaper.fast && self->epaper.awake) {
-        epaperdisplay_epaper_core_send_stop_sequence_guarded(&self->epaper);
+        epaperdisplay_epaper_core_send_stop_sequence_noexcept(&self->epaper);
     }
     self->epaper.awake = false;
     #endif
@@ -874,29 +872,24 @@ void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self) {
     if (self->epaper.busy.base.type == &digitalio_digitalinout_type) {
         common_hal_digitalio_digitalinout_deinit(&self->epaper.busy);
     }
+    epaperdisplay_epaper_core_release_sequences(&self->epaper);
 }
 
 void epaperdisplay_epaperdisplay_reset(epaperdisplay_epaperdisplay_obj_t *self) {
     #if CIRCUITPY_EPAPERDISPLAY_FAST
-    if (self->epaper.lag.frames > 0) {
-        // Only a primary display gets here; reset_displays() has released the others. The heap is
-        // still here but the sequences won't be, and the display would otherwise persist to draw
-        // the splash with them. Finish now and stay asleep. Its bus still holds the pins until
-        // the next VM ends or release_displays().
-        epaperdisplay_epaper_core_end_held_bus(&self->epaper);
-        release_epaperdisplay(self);
-        self->base.type = &mp_type_NoneType;
-        return;
+    epaperdisplay_epaper_core_set_held_exception(&self->epaper, MP_OBJ_NULL);
+    #endif
+    displayio_group_t *group = displayio_is_primary_display(self) ? &circuitpython_splash : NULL;
+    if (!displayio_display_core_set_root_group(&self->epaper.core, group)) {
+        displayio_display_core_set_root_group(&self->epaper.core, NULL);
     }
-    #endif // CIRCUITPY_EPAPERDISPLAY_FAST
-    displayio_display_core_set_root_group(&self->epaper.core, &circuitpython_splash);
     if (self->lv_display != NULL) {
         nlr_jump_callback_node_t cleanup;
         displayio_lvgl_lock_with_cleanup(&cleanup);
         self->full_refresh = true;
         self->dirty_full = true;
         lv_display_set_default(self->lv_display);
-        displayio_lvgl_set_root_group(&circuitpython_splash);
+        displayio_lvgl_set_root_group(group);
         lv_obj_t *screen = lv_display_get_screen_active(self->lv_display);
         if (screen != NULL) {
             lv_obj_invalidate(screen);
@@ -935,7 +928,7 @@ mp_obj_t common_hal_epaperdisplay_epaperdisplay_get_root_group(epaperdisplay_epa
 }
 
 mp_obj_t common_hal_epaperdisplay_epaperdisplay_get_bus(epaperdisplay_epaperdisplay_obj_t *self) {
-    return epaperdisplay_epaper_core_get_bus(&self->epaper);
+    return displayio_bus_proxy(self->link.bus);
 }
 
 uint32_t common_hal_epaperdisplay_epaperdisplay_get_time_to_refresh(epaperdisplay_epaperdisplay_obj_t *self) {
@@ -956,15 +949,7 @@ void epaperdisplay_epaperdisplay_background(epaperdisplay_epaperdisplay_obj_t *s
     epaperdisplay_epaper_core_background(&self->epaper);
 }
 
-void epaperdisplay_epaperdisplay_collect_ptrs(epaperdisplay_epaperdisplay_obj_t *self) {
-    epaperdisplay_epaper_core_collect_ptrs(&self->epaper);
-}
-
 #if CIRCUITPY_EPAPERDISPLAY_FAST
-void epaperdisplay_epaperdisplay_prepare_release(epaperdisplay_epaperdisplay_obj_t *self) {
-    epaperdisplay_epaper_core_prepare_release(&self->epaper);
-}
-
 void epaperdisplay_epaperdisplay_end_held_bus(epaperdisplay_epaperdisplay_obj_t *self) {
     epaperdisplay_epaper_core_end_held_bus(&self->epaper);
 }

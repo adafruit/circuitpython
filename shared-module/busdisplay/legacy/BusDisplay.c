@@ -42,7 +42,7 @@ void common_hal_busdisplay_busdisplay_construct(busdisplay_busdisplay_obj_t *sel
     uint16_t rotation, uint16_t color_depth, bool grayscale, bool pixels_in_byte_share_row,
     uint8_t bytes_per_cell, bool reverse_pixels_in_byte, bool reverse_bytes_in_word, uint8_t set_column_command,
     uint8_t set_row_command, uint8_t write_ram_command,
-    uint8_t *init_sequence, uint16_t init_sequence_len, const mcu_pin_obj_t *backlight_pin,
+    uint8_t *init_sequence, uint16_t init_sequence_len, const void *backlight_pin,
     uint16_t brightness_command, mp_float_t brightness,
     bool single_byte_bounds, bool data_as_commands, bool auto_refresh, uint16_t native_frames_per_second,
     bool backlight_on_high, bool SH1107_addressing, uint16_t backlight_pwm_frequency) {
@@ -71,7 +71,7 @@ void common_hal_busdisplay_busdisplay_construct(busdisplay_busdisplay_obj_t *sel
 
     displayio_display_bus_send_init_sequence(&self->bus, init_sequence, init_sequence_len);
 
-    busdisplay_backlight_construct(&self->backlight, backlight_pin, backlight_pwm_frequency);
+    busdisplay_backlight_construct(&self->backlight, (mp_obj_t)backlight_pin, backlight_pwm_frequency);
 
     common_hal_busdisplay_busdisplay_set_brightness(self, brightness);
 
@@ -81,6 +81,8 @@ void common_hal_busdisplay_busdisplay_construct(busdisplay_busdisplay_obj_t *sel
         common_hal_busdisplay_busdisplay_set_root_group(self, &circuitpython_splash);
     }
     common_hal_busdisplay_busdisplay_set_auto_refresh(self, auto_refresh);
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 uint16_t common_hal_busdisplay_busdisplay_get_width(busdisplay_busdisplay_obj_t *self) {
@@ -124,7 +126,7 @@ bool common_hal_busdisplay_busdisplay_set_brightness(busdisplay_busdisplay_obj_t
 }
 
 mp_obj_t common_hal_busdisplay_busdisplay_get_bus(busdisplay_busdisplay_obj_t *self) {
-    return self->bus.bus;
+    return displayio_bus_proxy(MP_OBJ_FROM_PTR(self->link.bus));
 }
 
 mp_obj_t common_hal_busdisplay_busdisplay_get_root_group(busdisplay_busdisplay_obj_t *self) {
@@ -385,16 +387,22 @@ void release_busdisplay(busdisplay_busdisplay_obj_t *self) {
 
 void reset_busdisplay(busdisplay_busdisplay_obj_t *self) {
     common_hal_busdisplay_busdisplay_set_auto_refresh(self, true);
-    circuitpython_splash.x = 0; // reset position in case someone moved it.
-    circuitpython_splash.y = 0;
-    supervisor_start_terminal(self->core.width, self->core.height);
-    // Show the splash if it is free, otherwise nothing. Other groups are on the VM heap.
-    if (!displayio_display_core_set_root_group(&self->core, &circuitpython_splash)) {
+    displayio_group_t *group = NULL;
+    if (displayio_is_primary_display(self)) {
+        circuitpython_splash.x = 0;
+        circuitpython_splash.y = 0;
+        supervisor_start_terminal(self->core.width, self->core.height);
+        group = &circuitpython_splash;
+    }
+    if (!displayio_display_core_set_root_group(&self->core, group)) {
         displayio_display_core_set_root_group(&self->core, NULL);
     }
 }
 
-void busdisplay_busdisplay_collect_ptrs(busdisplay_busdisplay_obj_t *self) {
-    displayio_display_core_collect_ptrs(&self->core);
-    displayio_display_bus_collect_ptrs(&self->bus);
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+busdisplay_busdisplay_vm_t *busdisplay_busdisplay_start_vm(busdisplay_busdisplay_obj_t *self) {
+    busdisplay_busdisplay_vm_t *vm = m_new_obj(busdisplay_busdisplay_vm_t);
+    vm->backlight = busdisplay_backlight_start_vm(&self->backlight);
+    return vm;
 }
+#endif

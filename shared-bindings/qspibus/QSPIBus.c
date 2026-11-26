@@ -82,11 +82,17 @@ static mp_obj_t qspibus_qspibus_make_new(const mp_obj_type_t *type, size_t n_arg
 
     uint32_t frequency = (uint32_t)mp_arg_validate_int_range(args[ARG_frequency].u_int, 1, 80000000, MP_QSTR_frequency);
 
-    qspibus_qspibus_obj_t *self = &allocate_display_bus_or_raise()->qspi_bus;
-    self->base.type = &qspibus_qspibus_type;
-    common_hal_qspibus_qspibus_construct(self, clock, data0, data1, data2, data3, cs, dcx, reset, frequency);
-
-    return MP_OBJ_FROM_PTR(self);
+    qspibus_qspibus_obj_t *self = displayio_native_init(NULL, &qspibus_qspibus_protocol,
+        &qspibus_qspibus_type, sizeof(*self), MP_OBJ_NULL, false);
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        common_hal_qspibus_qspibus_construct(self, clock, data0, data1, data2, data3, cs, dcx, reset, frequency);
+        mp_obj_t proxy = displayio_register(MP_OBJ_FROM_PTR(self));
+        nlr_pop();
+        return proxy;
+    }
+    displayio_construct_failed(MP_OBJ_FROM_PTR(self));
+    nlr_jump(nlr.ret_val);
 }
 
 //|     def reset(self) -> None:
@@ -97,7 +103,7 @@ static mp_obj_t qspibus_qspibus_make_new(const mp_obj_type_t *type, size_t n_arg
 //|         ...
 //|
 static mp_obj_t qspibus_qspibus_obj_reset(mp_obj_t self_in) {
-    qspibus_qspibus_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    qspibus_qspibus_obj_t *self = displayio_proxy_native(self_in, &qspibus_qspibus_type);
     check_for_deinit(self);
     if (!common_hal_qspibus_qspibus_reset(MP_OBJ_FROM_PTR(self))) {
         mp_raise_RuntimeError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_reset);
@@ -123,7 +129,7 @@ static mp_obj_t qspibus_qspibus_send(size_t n_args, const mp_obj_t *pos_args, mp
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    qspibus_qspibus_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
+    qspibus_qspibus_obj_t *self = displayio_proxy_native(pos_args[0], &qspibus_qspibus_type);
     check_for_deinit(self);
 
     uint8_t command = (uint8_t)mp_arg_validate_int_range(args[ARG_command].u_int, 0, 255, MP_QSTR_command);
@@ -158,7 +164,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(qspibus_qspibus_send_obj, 1, qspibus_qspibus_send);
 //|         ...
 //|
 static mp_obj_t qspibus_qspibus_write_command(mp_obj_t self_in, mp_obj_t command_obj) {
-    qspibus_qspibus_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    qspibus_qspibus_obj_t *self = displayio_proxy_native(self_in, &qspibus_qspibus_type);
     check_for_deinit(self);
 
     uint8_t command = (uint8_t)mp_arg_validate_int_range(mp_obj_get_int(command_obj), 0, 255, MP_QSTR_command);
@@ -171,8 +177,9 @@ MP_DEFINE_CONST_FUN_OBJ_2(qspibus_qspibus_write_command_obj, qspibus_qspibus_wri
 //|         """Send payload bytes for the most recently staged command."""
 //|         ...
 //|
+//|
 static mp_obj_t qspibus_qspibus_write_data(mp_obj_t self_in, mp_obj_t data_obj) {
-    qspibus_qspibus_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    qspibus_qspibus_obj_t *self = displayio_proxy_native(self_in, &qspibus_qspibus_type);
     check_for_deinit(self);
 
     mp_buffer_info_t bufinfo;
@@ -182,7 +189,28 @@ static mp_obj_t qspibus_qspibus_write_data(mp_obj_t self_in, mp_obj_t data_obj) 
 }
 MP_DEFINE_CONST_FUN_OBJ_2(qspibus_qspibus_write_data_obj, qspibus_qspibus_write_data);
 
+static mp_obj_t qspibus_qspibus_obj_deinit(mp_obj_t self_in) {
+    displayio_bus_deinit_obj(self_in, &qspibus_qspibus_type);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(qspibus_qspibus_deinit_obj, qspibus_qspibus_obj_deinit);
+static mp_obj_t qspibus_qspibus_obj___del__(mp_obj_t self_in) {
+    displayio_bus_proxy_finalise(MP_OBJ_TO_PTR(self_in));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(qspibus_qspibus___del___obj, qspibus_qspibus_obj___del__);
+
+static void qspibus_protocol_deinit(void *self) {
+    common_hal_qspibus_qspibus_deinit(self);
+}
+
+const displayio_protocol_t qspibus_qspibus_protocol = {
+    .deinit = qspibus_protocol_deinit,
+};
+
 static const mp_rom_map_elem_t qspibus_qspibus_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&qspibus_qspibus_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&qspibus_qspibus___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&qspibus_qspibus_reset_obj) },
     { MP_ROM_QSTR(MP_QSTR_send), MP_ROM_PTR(&qspibus_qspibus_send_obj) },
     { MP_ROM_QSTR(MP_QSTR_write_command), MP_ROM_PTR(&qspibus_qspibus_write_command_obj) },

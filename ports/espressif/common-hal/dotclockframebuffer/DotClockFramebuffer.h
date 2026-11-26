@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include "py/obj.h"
 
 #include "esp_lcd_panel_io.h"
@@ -16,6 +18,7 @@
 
 typedef struct dotclockframebuffer_framebuffer_obj {
     mp_obj_base_t base;
+    displayio_bus_lifetime_t bus_lifetime;
     mp_buffer_info_t bufinfo;
     mp_int_t width, row_stride;
     uint32_t frequency, refresh_rate;
@@ -25,3 +28,5 @@ typedef struct dotclockframebuffer_framebuffer_obj {
     esp_lcd_rgb_panel_config_t panel_config;
     esp_lcd_panel_handle_t panel_handle;
 } dotclockframebuffer_framebuffer_obj_t;
+
+extern const displayio_protocol_t dotclockframebuffer_framebuffer_protocol;

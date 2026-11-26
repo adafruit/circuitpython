@@ -19,3 +19,6 @@ CIRCUITPY_KEYPAD = 0
 # Include these Python libraries in firmware.
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_LIS3DH
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_NeoPixel
+
+# Keep full display lifetime because this board has a built-in display.
+CIRCUITPY_DISPLAY_LIFETIME_SIMPLE = 0

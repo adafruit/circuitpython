@@ -88,7 +88,6 @@ void displayio_display_bus_construct(displayio_display_bus_t *self,
         self->begin_transaction = common_hal_paralleldisplaybus_parallelbus_begin_transaction;
         self->send = common_hal_paralleldisplaybus_parallelbus_send;
         self->end_transaction = common_hal_paralleldisplaybus_parallelbus_end_transaction;
-        self->collect_ptrs = common_hal_paralleldisplaybus_parallelbus_collect_ptrs;
     } else
     #endif
     #if CIRCUITPY_FOURWIRE
@@ -98,7 +97,6 @@ void displayio_display_bus_construct(displayio_display_bus_t *self,
         self->begin_transaction = common_hal_fourwire_fourwire_begin_transaction;
         self->send = common_hal_fourwire_fourwire_send;
         self->end_transaction = common_hal_fourwire_fourwire_end_transaction;
-        self->collect_ptrs = common_hal_fourwire_fourwire_collect_ptrs;
         #if CIRCUITPY_BUSIO_SPI_ASYNC
         self->send_async = common_hal_fourwire_fourwire_send_async;
         self->flush = common_hal_fourwire_fourwire_flush;
@@ -112,7 +110,6 @@ void displayio_display_bus_construct(displayio_display_bus_t *self,
         self->begin_transaction = common_hal_i2cdisplaybus_i2cdisplaybus_begin_transaction;
         self->send = common_hal_i2cdisplaybus_i2cdisplaybus_send;
         self->end_transaction = common_hal_i2cdisplaybus_i2cdisplaybus_end_transaction;
-        self->collect_ptrs = common_hal_i2cdisplaybus_i2cdisplaybus_collect_ptrs;
     } else
     #endif
     #if CIRCUITPY_QSPIBUS
@@ -123,7 +120,6 @@ void displayio_display_bus_construct(displayio_display_bus_t *self,
         self->send = common_hal_qspibus_qspibus_send;
         self->end_transaction = common_hal_qspibus_qspibus_end_transaction;
         self->flush = common_hal_qspibus_qspibus_flush;
-        self->collect_ptrs = common_hal_qspibus_qspibus_collect_ptrs;
     } else
     #endif
     {
@@ -321,8 +317,4 @@ void displayio_display_bus_flush(displayio_display_bus_t *self) {
     if (self->flush != NULL) {
         self->flush(self->bus);
     }
-}
-
-void displayio_display_bus_collect_ptrs(displayio_display_bus_t *self) {
-    self->collect_ptrs(self->bus);
 }

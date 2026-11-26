@@ -93,6 +93,19 @@ bool common_hal_pwmio_pwmout_deinited(pwmio_pwmout_obj_t *self) {
     return self->tim == NULL;
 }
 
+bool common_hal_pwmio_pwmout_is_moveable(pwmio_pwmout_obj_t *self) {
+    return !common_hal_pwmio_pwmout_deinited(self);
+}
+
+bool common_hal_pwmio_pwmout_move(pwmio_pwmout_obj_t *self, pwmio_pwmout_obj_t *destination) {
+    if (!common_hal_pwmio_pwmout_is_moveable(self)) {
+        return false;
+    }
+    *destination = *self;
+    self->tim = NULL;
+    return true;
+}
+
 // Deinit pwm obj
 void common_hal_pwmio_pwmout_deinit(pwmio_pwmout_obj_t *self) {
     sl_pwm_deinit(&self->handle);

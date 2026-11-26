@@ -15,6 +15,7 @@
 #include "common-hal/qspibus/QSPIBus.h"
 
 extern const mp_obj_type_t qspibus_qspibus_type;
+extern const displayio_protocol_t qspibus_qspibus_protocol;
 
 void common_hal_qspibus_qspibus_construct(
     qspibus_qspibus_obj_t *self,
@@ -50,4 +51,3 @@ void common_hal_qspibus_qspibus_send(
     uint32_t data_length);
 void common_hal_qspibus_qspibus_end_transaction(mp_obj_t obj);
 void common_hal_qspibus_qspibus_flush(mp_obj_t obj);
-void common_hal_qspibus_qspibus_collect_ptrs(mp_obj_t obj);

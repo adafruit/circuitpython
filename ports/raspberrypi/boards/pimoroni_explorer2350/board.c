@@ -68,8 +68,14 @@ uint8_t display_init_sequence[] = {
     0x29, 0 | DELAY, 100,
 };
 
+static paralleldisplaybus_parallelbus_obj_t board_display_bus;
+busdisplay_busdisplay_obj_t board_display;
+
 static void display_init(void) {
-    paralleldisplaybus_parallelbus_obj_t *bus = &allocate_display_bus()->parallel_bus;
+    paralleldisplaybus_parallelbus_obj_t *bus = displayio_native_init(&board_display_bus, &paralleldisplaybus_parallelbus_protocol, &paralleldisplaybus_parallelbus_type, 0, MP_OBJ_NULL, true);
+    if (bus == NULL) {
+        return;
+    }
     bus->base.type = &paralleldisplaybus_parallelbus_type;
 
     common_hal_paralleldisplaybus_parallelbus_construct(bus,
@@ -81,7 +87,11 @@ static void display_init(void) {
         NULL,         // Reset (directly connected to board reset)
         15000000);    // Frequency - ST7789 min clock cycle ~66ns = ~15MHz
 
-    busdisplay_busdisplay_obj_t *display = &allocate_display()->display;
+    busdisplay_busdisplay_obj_t *display = displayio_native_init(&board_display, &busdisplay_busdisplay_protocol, &busdisplay_busdisplay_type, 0, MP_OBJ_FROM_PTR(bus), true);
+
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &busdisplay_busdisplay_type;
 
     common_hal_busdisplay_busdisplay_construct(display,

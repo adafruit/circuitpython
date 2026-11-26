@@ -84,8 +84,14 @@ static const mcu_pin_obj_t *green_pins[] = {
 static const mcu_pin_obj_t *blue_pins[] = {
     &pin_GPIO10, &pin_GPIO11, &pin_GPIO12, &pin_GPIO13, &pin_GPIO14
 };
+static dotclockframebuffer_framebuffer_obj_t board_display_bus;
+framebufferio_framebufferdisplay_obj_t board_display;
+
 void board_init(void) {
-    dotclockframebuffer_framebuffer_obj_t *framebuffer = &allocate_display_bus_or_raise()->dotclock;
+    dotclockframebuffer_framebuffer_obj_t *framebuffer = displayio_native_init(&board_display_bus, &dotclockframebuffer_framebuffer_protocol, &dotclockframebuffer_framebuffer_type, 0, MP_OBJ_NULL, true);
+    if (framebuffer == NULL) {
+        return;
+    }
     framebuffer->base.type = &dotclockframebuffer_framebuffer_type;
 
     common_hal_dotclockframebuffer_framebuffer_construct(
@@ -105,7 +111,11 @@ void board_init(void) {
         /* overscan_left */ 0
         );
 
-    framebufferio_framebufferdisplay_obj_t *disp = &allocate_display_or_raise()->framebuffer_display;
+    framebufferio_framebufferdisplay_obj_t *disp = displayio_native_init(&board_display, &framebufferio_framebufferdisplay_protocol, &framebufferio_framebufferdisplay_type, 0, MP_OBJ_FROM_PTR(framebuffer), true);
+
+    if (disp == NULL) {
+        return;
+    }
     disp->base.type = &framebufferio_framebufferdisplay_type;
     common_hal_framebufferio_framebufferdisplay_construct(
         disp,

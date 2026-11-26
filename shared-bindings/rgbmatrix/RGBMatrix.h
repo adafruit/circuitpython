@@ -10,6 +10,7 @@
 #include "lib/protomatter/src/core.h"
 
 extern const mp_obj_type_t rgbmatrix_RGBMatrix_type;
+extern const displayio_protocol_t rgbmatrix_RGBMatrix_protocol;
 
 void common_hal_rgbmatrix_rgbmatrix_construct(rgbmatrix_rgbmatrix_obj_t *self, int width, int bit_depth, uint8_t rgb_count, const mcu_pin_obj_t **rgb_pins, uint8_t addr_count, const mcu_pin_obj_t **addr_pins, const mcu_pin_obj_t *clock_pin, const mcu_pin_obj_t *latch_pin, const mcu_pin_obj_t *oe_pin, bool doublebuffer, mp_obj_t framebuffer, int8_t tile, bool serpentine, void *timer, uint8_t row_addr_count, ProtomatterRowAddressMode row_address_mode);
 void common_hal_rgbmatrix_rgbmatrix_deinit(rgbmatrix_rgbmatrix_obj_t *);

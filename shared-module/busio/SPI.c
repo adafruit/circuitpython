@@ -52,6 +52,20 @@ void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
     common_hal_async_spi_spi_mark_deinit(&self->async_spi);
 }
 
+bool common_hal_busio_spi_is_moveable(busio_spi_obj_t *self) {
+    return !common_hal_busio_spi_deinited(self) && self->sent == NULL &&
+           !circuitpy_async_lock_held(common_hal_async_spi_spi_get_lock(&self->async_spi));
+}
+
+bool common_hal_busio_spi_move(busio_spi_obj_t *self, busio_spi_obj_t *destination) {
+    if (!common_hal_busio_spi_is_moveable(self)) {
+        return false;
+    }
+    *destination = *self;
+    common_hal_busio_spi_mark_deinit(self);
+    return true;
+}
+
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     common_hal_async_spi_spi_deinit(&self->async_spi);
 }

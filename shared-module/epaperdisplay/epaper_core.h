@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include "common-hal/digitalio/DigitalInOut.h"
 #include "shared-module/displayio/area.h"
 #include "shared-module/displayio/bus_core.h"
@@ -23,7 +25,7 @@ typedef struct {
     uint8_t **slots;
     uint64_t busy_deadline; // When not 0, stop waiting for BUSY or the bus after this tick.
     // What interrupted while interrupts are held. A send can raise one from the heap, so it is
-    // marked in epaperdisplay_epaper_core_collect_ptrs().
+    // retained by the implementation-owned VM reference struct.
     mp_obj_t held_exception;
     bool holding_interrupts;
     bool bus_held; // Inside a transaction, so an exception must end it.
@@ -58,6 +60,11 @@ typedef struct {
     const uint8_t *start_sequence;
     const uint8_t *stop_sequence;
     const uint8_t *refresh_sequence;
+    // Holds the refresh command byte when it was given as an int. Zeroed on allocation, so the
+    // unused bytes stay 0.
+    uint8_t refresh_command[3];
+    // Port-heap copy of the sequences owned by the previous VM, if any.
+    uint8_t *sequence_storage;
     uint16_t start_sequence_len;
     uint16_t stop_sequence_len;
     uint16_t refresh_sequence_len;
@@ -98,13 +105,13 @@ uint16_t epaperdisplay_epaper_core_get_width(epaperdisplay_epaper_core_t *self);
 uint16_t epaperdisplay_epaper_core_get_height(epaperdisplay_epaper_core_t *self);
 uint16_t epaperdisplay_epaper_core_get_rotation(epaperdisplay_epaper_core_t *self);
 mp_obj_t epaperdisplay_epaper_core_get_root_group(epaperdisplay_epaper_core_t *self);
-mp_obj_t epaperdisplay_epaper_core_get_bus(epaperdisplay_epaper_core_t *self);
 uint32_t epaperdisplay_epaper_core_get_time_to_refresh(epaperdisplay_epaper_core_t *self);
 bool epaperdisplay_epaper_core_get_busy(epaperdisplay_epaper_core_t *self);
 void epaperdisplay_epaper_core_background(epaperdisplay_epaper_core_t *self);
 void epaperdisplay_epaper_core_change_refresh_mode_parameters(epaperdisplay_epaper_core_t *self,
     mp_buffer_info_t *start_sequence, mp_buffer_info_t *refresh_sequence, float seconds_per_frame);
-void epaperdisplay_epaper_core_collect_ptrs(epaperdisplay_epaper_core_t *self);
+// Returns the sequences to the port heap. Does not raise.
+void epaperdisplay_epaper_core_release_sequences(epaperdisplay_epaper_core_t *self);
 
 // Waits for BUSY to clear or an interrupt. On a lag display the wait is bounded.
 void epaperdisplay_epaper_core_wait_for_busy(epaperdisplay_epaper_core_t *self);
@@ -115,9 +122,11 @@ bool epaperdisplay_epaper_core_send_command_sequence(epaperdisplay_epaper_core_t
 void epaperdisplay_epaper_core_delay_ms(epaperdisplay_epaper_core_t *self, uint32_t delay_ms);
 
 #if CIRCUITPY_EPAPERDISPLAY_FAST
-void epaperdisplay_epaper_core_prepare_release(epaperdisplay_epaper_core_t *self);
+void epaperdisplay_epaper_core_set_held_exception(epaperdisplay_epaper_core_t *self, mp_obj_t exception);
 void epaperdisplay_epaper_core_end_held_bus(epaperdisplay_epaper_core_t *self);
 void epaperdisplay_epaper_core_send_stop_sequence_guarded(epaperdisplay_epaper_core_t *self);
+// Like the guarded send, but swallows the interrupt. deinit must not raise.
+void epaperdisplay_epaper_core_send_stop_sequence_noexcept(epaperdisplay_epaper_core_t *self);
 bool epaperdisplay_epaper_core_wait_for_update_end(epaperdisplay_epaper_core_t *self);
 bool epaperdisplay_epaper_core_interrupted(epaperdisplay_epaper_core_t *self);
 bool epaperdisplay_epaper_core_wait_for_update_start(epaperdisplay_epaper_core_t *self);

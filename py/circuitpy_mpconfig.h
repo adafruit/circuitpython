@@ -426,8 +426,9 @@ typedef long mp_off_t;
 // So if any are not defined in *.mk, they'll throw an error here.
 
 #if CIRCUITPY_DISPLAYIO
-#ifndef CIRCUITPY_DISPLAY_LIMIT
-#define CIRCUITPY_DISPLAY_LIMIT (1)
+// Normally set from CIRCUITPY_DISPLAY_LIFETIME_SIMPLE in the .mk files.
+#ifndef CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+#define CIRCUITPY_DISPLAY_LIFETIME_SIMPLE (0)
 #endif
 
 // Normally set from CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE in the .mk files.
@@ -435,8 +436,6 @@ typedef long mp_off_t;
 #define CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE (512)
 #endif
 
-#else
-#define CIRCUITPY_DISPLAY_LIMIT (0)
 #endif
 
 // This is not a top-level module; it's microcontroller.nvm.

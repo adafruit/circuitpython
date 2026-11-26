@@ -73,9 +73,10 @@
 //|
 
 //| def release_displays() -> None:
-//|     """Releases any actively used displays so their buses and pins can be used again. This will also
-//|     release the builtin display on boards that have one. You will need to reinitialize it yourself
-//|     afterwards. This may take seconds to complete if an active EPaperDisplay is refreshing.
+//|     """Release `supervisor.runtime.display <supervisor.Runtime.display>`, the built-in displays,
+//|     and their buses so the pins can be used again. Displays sharing those buses are also released.
+//|     Unrelated displays and buses are unaffected. You will need to reinitialize a released display
+//|     yourself afterwards. This may take seconds if an affected EPaperDisplay is refreshing.
 //|
 //|     .. deprecated:: 11.0.0
 //|        Call ``deinit()`` on the display instead. To release a built-in display or a display
@@ -90,16 +91,13 @@
 //|     the display will remain released even if you restart the CircuitPython VM, for instance by typing ctrl-D.
 //|     The display is not re-initialized until you do a hard reset or manually initialize it again.
 //|
-//|     If an EPaperDisplay using ``lag_frames`` can't get its bus, this waits up to 30 seconds and then
-//|     raises `RuntimeError` with every display left as it was, so you can free the bus and call it again.
+//|     If an EPaperDisplay using ``lag_frames`` can't get its bus, this waits up to 30 seconds for the
+//|     panel and bus before continuing. It does not raise.
 //|     """
 //|     ...
 //|
 //|
 static mp_obj_t displayio_release_displays(void) {
-    #if CIRCUITPY_EPAPERDISPLAY_FAST
-    displayio_prepare_release_displays();
-    #endif
     common_hal_displayio_release_displays();
     return mp_const_none;
 }

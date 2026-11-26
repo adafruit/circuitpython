@@ -12,6 +12,7 @@
 #include "common-hal/microcontroller/Pin.h"
 
 extern const mp_obj_type_t i2cdisplaybus_i2cdisplaybus_type;
+extern const displayio_protocol_t i2cdisplaybus_i2cdisplaybus_protocol;
 
 void common_hal_i2cdisplaybus_i2cdisplaybus_construct(i2cdisplaybus_i2cdisplaybus_obj_t *self,
     busio_i2c_obj_t *i2c, uint16_t device_address, const mcu_pin_obj_t *reset);
@@ -30,4 +31,3 @@ void common_hal_i2cdisplaybus_i2cdisplaybus_end_transaction(mp_obj_t self);
 
 // The I2CDisplayBus object always lives off the MP heap. So, code must collect any pointers
 // back to the MP heap manually. Otherwise they'll get freed.
-void common_hal_i2cdisplaybus_i2cdisplaybus_collect_ptrs(mp_obj_t obj);

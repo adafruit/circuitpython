@@ -43,8 +43,14 @@ uint8_t display_init_sequence[] = {
     0x29, 0x80, 0x78,  // Display on then delay 0x78 (120ms)
 };
 
+static fourwire_fourwire_obj_t board_display_bus;
+busdisplay_busdisplay_obj_t board_display;
+
 void board_init(void) {
-    fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
+    fourwire_fourwire_obj_t *bus = displayio_native_init(&board_display_bus, &fourwire_fourwire_protocol, &fourwire_fourwire_type, 0, MP_OBJ_NULL, true);
+    if (bus == NULL) {
+        return;
+    }
     busio_spi_obj_t *spi = &bus->inline_bus;
     common_hal_busio_spi_construct(spi, &pin_GPIO2, &pin_GPIO3, NULL, false);
 
@@ -58,7 +64,11 @@ void board_init(void) {
         0, // Polarity
         0); // Phase
 
-    busdisplay_busdisplay_obj_t *display = &allocate_display()->display;
+    busdisplay_busdisplay_obj_t *display = displayio_native_init(&board_display, &busdisplay_busdisplay_protocol, &busdisplay_busdisplay_type, 0, MP_OBJ_FROM_PTR(bus), true);
+
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &busdisplay_busdisplay_type;
     common_hal_busdisplay_busdisplay_construct(display,
         bus,

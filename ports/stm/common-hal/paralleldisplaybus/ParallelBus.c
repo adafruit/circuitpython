@@ -121,6 +121,8 @@ void common_hal_paralleldisplaybus_parallelbus_construct_nonsequential(paralleld
         output_pin_init(&self->reset, reset, true);
         common_hal_paralleldisplaybus_parallelbus_reset(self);
     }
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 void common_hal_paralleldisplaybus_parallelbus_deinit(paralleldisplaybus_parallelbus_obj_t *self) {

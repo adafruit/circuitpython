@@ -83,6 +83,8 @@ void common_hal_framebufferio_framebufferdisplay_construct(framebufferio_framebu
     // initialization.
     displayio_display_core_set_root_group(&self->core, &circuitpython_splash);
     common_hal_framebufferio_framebufferdisplay_set_auto_refresh(self, auto_refresh);
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 uint16_t common_hal_framebufferio_framebufferdisplay_get_width(framebufferio_framebufferdisplay_obj_t *self) {
@@ -110,6 +112,9 @@ bool common_hal_framebufferio_framebufferdisplay_set_brightness(framebufferio_fr
 }
 
 mp_obj_t common_hal_framebufferio_framebufferdisplay_get_framebuffer(framebufferio_framebufferdisplay_obj_t *self) {
+    if (self->link.bus != MP_OBJ_NULL) {
+        return displayio_bus_proxy(self->link.bus);
+    }
     return self->framebuffer;
 }
 
@@ -340,20 +345,27 @@ void framebufferio_framebufferdisplay_background(framebufferio_framebufferdispla
 void release_framebufferdisplay(framebufferio_framebufferdisplay_obj_t *self) {
     common_hal_framebufferio_framebufferdisplay_set_auto_refresh(self, false);
     release_display_core(&self->core);
-    self->framebuffer_protocol->deinit(self->framebuffer);
-    self->base.type = &mp_type_NoneType;
+    // The central bus release operation deinitializes and frees the framebuffer.
 }
 
-void framebufferio_framebufferdisplay_collect_ptrs(framebufferio_framebufferdisplay_obj_t *self) {
-    gc_collect_ptr(self->framebuffer);
-    displayio_display_core_collect_ptrs(&self->core);
+mp_obj_t framebufferio_framebufferdisplay_start_vm(framebufferio_framebufferdisplay_obj_t *self) {
+    mp_obj_t refs = mp_obj_new_list(2, NULL);
+    mp_obj_t framebuffer = self->link.bus == MP_OBJ_NULL ? self->framebuffer : mp_const_none;
+    mp_obj_list_store(refs, MP_OBJ_NEW_SMALL_INT(0), framebuffer);
+    mp_obj_t root_group = self->core.current_group == NULL ? mp_const_none : MP_OBJ_FROM_PTR(self->core.current_group);
+    mp_obj_list_store(refs, MP_OBJ_NEW_SMALL_INT(1), root_group);
+    return refs;
 }
+
 
 void framebufferio_framebufferdisplay_reset(framebufferio_framebufferdisplay_obj_t *self) {
     const mp_obj_type_t *fb_type = mp_obj_get_type(self->framebuffer);
     if (fb_type != NULL && fb_type != &mp_type_NoneType) {
         common_hal_framebufferio_framebufferdisplay_set_auto_refresh(self, true);
-        displayio_display_core_set_root_group(&self->core, &circuitpython_splash);
+        displayio_group_t *group = displayio_is_primary_display(self) ? &circuitpython_splash : NULL;
+        if (!displayio_display_core_set_root_group(&self->core, group)) {
+            displayio_display_core_set_root_group(&self->core, NULL);
+        }
         self->core.full_refresh = true;
     } else {
         release_framebufferdisplay(self);

@@ -87,6 +87,7 @@ void common_hal_paralleldisplaybus_parallelbus_construct(paralleldisplaybus_para
         PIO_FIFO_TYPE_DEFAULT,
         PIO_MOV_STATUS_DEFAULT, PIO_MOV_N_DEFAULT);
 
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 void common_hal_paralleldisplaybus_parallelbus_deinit(paralleldisplaybus_parallelbus_obj_t *self) {

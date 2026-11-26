@@ -1,5 +1,7 @@
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 /*
  * This file is part of the Micro Python project, http://micropython.org/
  *
@@ -32,6 +34,7 @@
 
 typedef struct {
     mp_obj_base_t base;
+    displayio_bus_lifetime_t bus_lifetime;
     uint32_t *framebuffer;
     size_t framebuffer_len; // in words
     size_t tmdsbuf_size; // in words

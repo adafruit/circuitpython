@@ -43,6 +43,19 @@ bool common_hal_digitalio_digitalinout_deinited(
     return self->pin == NULL;
 }
 
+bool common_hal_digitalio_digitalinout_is_moveable(digitalio_digitalinout_obj_t *self) {
+    return !common_hal_digitalio_digitalinout_deinited(self);
+}
+
+bool common_hal_digitalio_digitalinout_move(digitalio_digitalinout_obj_t *self, digitalio_digitalinout_obj_t *destination) {
+    if (!common_hal_digitalio_digitalinout_is_moveable(self)) {
+        return false;
+    }
+    *destination = *self;
+    self->pin = NULL;
+    return true;
+}
+
 // Deinit Digitalio obj
 void common_hal_digitalio_digitalinout_deinit(
     digitalio_digitalinout_obj_t *self) {

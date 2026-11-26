@@ -161,8 +161,9 @@ void reset_board_buses(void) {
     for (uint8_t instance = 0; instance < CIRCUITPY_BOARD_I2C; instance++) {
         bool keep_bus = i2c_retain_count[instance] > 0;
         #if CIRCUITPY_I2CDISPLAYBUS
-        for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
-            if (display_buses[i].bus_base.type == &i2cdisplaybus_i2cdisplaybus_type && display_buses[i].i2cdisplay_bus.bus == &i2c_obj[instance]) {
+        for (mp_obj_t bus = displayio_bus_next(MP_OBJ_NULL); bus != MP_OBJ_NULL; bus = displayio_bus_next(bus)) {
+            if (mp_obj_get_type(bus) == &i2cdisplaybus_i2cdisplaybus_type &&
+                ((i2cdisplaybus_i2cdisplaybus_obj_t *)MP_OBJ_TO_PTR(bus))->bus == &i2c_obj[instance]) {
                 keep_bus = true;
                 break;
             }
@@ -182,24 +183,24 @@ void reset_board_buses(void) {
     for (uint8_t instance = 0; instance < CIRCUITPY_BOARD_SPI; instance++) {
         bool display_using_spi = false;
         #if CIRCUITPY_FOURWIRE || CIRCUITPY_SHARPDISPLAY || CIRCUITPY_AURORA_EPAPER
-        for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
-            mp_const_obj_t bus_type = display_buses[i].bus_base.type;
+        for (mp_obj_t bus = displayio_bus_next(MP_OBJ_NULL); bus != MP_OBJ_NULL; bus = displayio_bus_next(bus)) {
+            const mp_obj_type_t *bus_type = mp_obj_get_type(bus);
             #if CIRCUITPY_FOURWIRE
-            if (bus_type == &fourwire_fourwire_type && display_buses[i].fourwire_bus.bus == &spi_obj[instance]) {
+            if (bus_type == &fourwire_fourwire_type &&
+                ((fourwire_fourwire_obj_t *)MP_OBJ_TO_PTR(bus))->bus == &spi_obj[instance]) {
                 display_using_spi = true;
-                break;
             }
             #endif
             #if CIRCUITPY_SHARPDISPLAY
-            if (bus_type == &sharpdisplay_framebuffer_type && display_buses[i].sharpdisplay.bus == &spi_obj[instance]) {
+            if (bus_type == &sharpdisplay_framebuffer_type &&
+                ((sharpdisplay_framebuffer_obj_t *)MP_OBJ_TO_PTR(bus))->bus == &spi_obj[instance]) {
                 display_using_spi = true;
-                break;
             }
             #endif
             #if CIRCUITPY_AURORA_EPAPER
-            if (bus_type == &aurora_framebuffer_type && display_buses[i].aurora_epaper.bus == &spi_obj[instance]) {
+            if (bus_type == &aurora_framebuffer_type &&
+                ((aurora_epaper_framebuffer_obj_t *)MP_OBJ_TO_PTR(bus))->bus == &spi_obj[instance]) {
                 display_using_spi = true;
-                break;
             }
             #endif
         }

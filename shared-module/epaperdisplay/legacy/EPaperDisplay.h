@@ -10,5 +10,7 @@
 
 struct epaperdisplay_epaperdisplay_obj_t {
     mp_obj_base_t base;
+    // Follows base for the display registry. Its proxy ties VM-owned references to this VM.
+    displayio_display_link_t link;
     epaperdisplay_epaper_core_t epaper;
 };

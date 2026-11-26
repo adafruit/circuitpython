@@ -1111,7 +1111,7 @@ void picogame_set_pixel_format(picogame_output_t *display, bool rgb444) {
     rgb444_display = rgb444 ? display : NULL;
 }
 
-// Called at the end of a program, before reset_displays() takes the bus away.
+// Called at the end of a program, before displayio_stop_vm() takes the bus away.
 void picogame_reset(void) {
     if (rgb444_display == NULL) {
         return;

@@ -117,6 +117,8 @@ void common_hal_paralleldisplaybus_parallelbus_construct_nonsequential(paralleld
     if (reset != NULL) {
         claim_pin(reset);
     }
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 

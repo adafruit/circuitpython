@@ -11,6 +11,8 @@
 #include "shared-bindings/microcontroller/Pin.h"
 
 extern const mp_obj_type_t picodvi_framebuffer_type;
+extern const displayio_protocol_t picodvi_framebuffer_protocol;
+
 
 bool common_hal_picodvi_framebuffer_preflight(
     mp_uint_t width, mp_uint_t height,

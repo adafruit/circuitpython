@@ -6,8 +6,6 @@
 
 #include "shared-bindings/fourwire/FourWire.h"
 
-#include <stdint.h>
-
 #include "py/gc.h"
 #include "shared-bindings/busio/SPI.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
@@ -46,6 +44,8 @@ void common_hal_fourwire_fourwire_construct(fourwire_fourwire_obj_t *self,
     if (self->chip_select != mp_const_none) {
         digitalinout_protocol_switch_to_output(self->chip_select, true, DRIVE_MODE_PUSH_PULL);
     }
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 void common_hal_fourwire_fourwire_deinit(fourwire_fourwire_obj_t *self) {
@@ -67,6 +67,54 @@ void common_hal_fourwire_fourwire_deinit(fourwire_fourwire_obj_t *self) {
         circuitpy_free_obj(self->reset);
     }
 }
+
+static void fourwire_protocol_deinit(void *self) {
+    common_hal_fourwire_fourwire_deinit(self);
+}
+
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+static void *fourwire_protocol_start_vm(void *self) {
+    return fourwire_fourwire_start_vm(self);
+}
+
+static bool fourwire_protocol_is_moveable(void *self_in) {
+    fourwire_fourwire_obj_t *self = self_in;
+    // Protocol objects borrowed from the VM cannot be used between runs.
+    if (gc_ptr_on_heap(MP_OBJ_TO_PTR(self->command)) ||
+        gc_ptr_on_heap(MP_OBJ_TO_PTR(self->chip_select)) ||
+        gc_ptr_on_heap(MP_OBJ_TO_PTR(self->reset))) {
+        return false;
+    }
+    return !gc_ptr_on_heap(self->bus) || common_hal_busio_spi_is_moveable(self->bus);
+}
+
+static bool fourwire_protocol_stop_vm(void *self_in) {
+    fourwire_fourwire_obj_t *self = self_in;
+    if (!fourwire_protocol_is_moveable(self)) {
+        if (gc_ptr_on_heap(self->bus)) {
+            common_hal_busio_spi_deinit(self->bus);
+        }
+        return false;
+    }
+    if (gc_ptr_on_heap(self->bus)) {
+        if (!common_hal_busio_spi_move(self->bus, &self->inline_bus)) {
+            common_hal_busio_spi_deinit(self->bus);
+            return false;
+        }
+        self->bus = &self->inline_bus;
+    }
+    return true;
+}
+#endif
+
+const displayio_protocol_t fourwire_fourwire_protocol = {
+    .deinit = fourwire_protocol_deinit,
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    .is_moveable = fourwire_protocol_is_moveable,
+    .start_vm = fourwire_protocol_start_vm,
+    .stop_vm = fourwire_protocol_stop_vm,
+    #endif
+};
 
 bool common_hal_fourwire_fourwire_reset(mp_obj_t obj) {
     fourwire_fourwire_obj_t *self = MP_OBJ_TO_PTR(obj);
@@ -205,7 +253,22 @@ void common_hal_fourwire_fourwire_end_transaction(mp_obj_t obj) {
     common_hal_busio_spi_unlock(self->bus);
 }
 
-void common_hal_fourwire_fourwire_collect_ptrs(mp_obj_t obj) {
-    fourwire_fourwire_obj_t *self = MP_OBJ_TO_PTR(obj);
-    gc_collect_ptr((void *)self->bus);
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+mp_obj_t fourwire_fourwire_start_vm(fourwire_fourwire_obj_t *self) {
+    mp_obj_t refs = mp_obj_new_list(4, NULL);
+    if (self->bus == &self->inline_bus) {
+        busio_spi_obj_t *heap_bus = mp_obj_malloc_with_finaliser(busio_spi_obj_t, &busio_spi_type);
+        if (!common_hal_busio_spi_move(self->bus, heap_bus)) {
+            common_hal_busio_spi_deinit(self->bus);
+            m_free(heap_bus);
+            mp_raise_ValueError(MP_ERROR_TEXT("Display resources cannot move between VMs"));
+        }
+        self->bus = heap_bus;
+    }
+    mp_obj_list_store(refs, MP_OBJ_NEW_SMALL_INT(0), MP_OBJ_FROM_PTR(self->bus));
+    mp_obj_list_store(refs, MP_OBJ_NEW_SMALL_INT(1), self->command);
+    mp_obj_list_store(refs, MP_OBJ_NEW_SMALL_INT(2), self->chip_select);
+    mp_obj_list_store(refs, MP_OBJ_NEW_SMALL_INT(3), self->reset);
+    return refs;
 }
+#endif

@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include "lvgl.h"
 
 #include "shared-bindings/digitalio/DigitalInOut.h"
@@ -19,6 +21,7 @@
 // lv_display_t and keeps the display bus as an mp_obj_t so the GC can see it.
 typedef struct {
     mp_obj_base_t base;
+    displayio_display_link_t link;
     // Bus the display is attached to (fourwire, etc.).
     displayio_display_bus_t bus;
     // LVGL display handle - owns draw buffers and flush CB
@@ -54,7 +57,11 @@ typedef struct {
     bool deinited;
 } busdisplay_busdisplay_obj_t;
 
+typedef struct {
+    mp_obj_t backlight;
+} busdisplay_busdisplay_vm_t;
+
 void busdisplay_busdisplay_background(busdisplay_busdisplay_obj_t *self);
 void release_busdisplay(busdisplay_busdisplay_obj_t *self);
 void reset_busdisplay(busdisplay_busdisplay_obj_t *self);
-void busdisplay_busdisplay_collect_ptrs(busdisplay_busdisplay_obj_t *self);
+busdisplay_busdisplay_vm_t *busdisplay_busdisplay_start_vm(busdisplay_busdisplay_obj_t *self);

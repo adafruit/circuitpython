@@ -141,8 +141,8 @@ static mp_obj_t dotclockframebuffer_framebuffer_make_new(const mp_obj_type_t *ty
     validate_list_is_free_pins(MP_QSTR_green, green_pins, (mp_int_t)MP_ARRAY_SIZE(green_pins), args[ARG_green].u_obj, &num_green);
     validate_list_is_free_pins(MP_QSTR_blue, blue_pins, (mp_int_t)MP_ARRAY_SIZE(blue_pins), args[ARG_blue].u_obj, &num_blue);
 
-    dotclockframebuffer_framebuffer_obj_t *self = &allocate_display_bus_or_raise()->dotclock;
-    self->base.type = &dotclockframebuffer_framebuffer_type;
+    dotclockframebuffer_framebuffer_obj_t *self = displayio_native_init(NULL, &dotclockframebuffer_framebuffer_protocol,
+        &dotclockframebuffer_framebuffer_type, sizeof(*self), MP_OBJ_NULL, false);
 
     common_hal_dotclockframebuffer_framebuffer_construct(
         self, de, vsync, hsync, dclk, red_pins, num_red, green_pins, num_green, blue_pins, num_blue,
@@ -154,8 +154,11 @@ static mp_obj_t dotclockframebuffer_framebuffer_make_new(const mp_obj_type_t *ty
         args[ARG_pclk_idle_high].u_bool,
         args[ARG_overscan_left].u_int
         );
+    return displayio_register(MP_OBJ_FROM_PTR(self));
+}
 
-    return self;
+static dotclockframebuffer_framebuffer_obj_t *native_framebuffer(mp_obj_t obj) {
+    return displayio_proxy_native(obj, &dotclockframebuffer_framebuffer_type);
 }
 
 static void check_for_deinit(dotclockframebuffer_framebuffer_obj_t *self) {
@@ -173,7 +176,7 @@ static void check_for_deinit(dotclockframebuffer_framebuffer_obj_t *self) {
 //|         ...
 //|
 static mp_obj_t dotclockframebuffer_framebuffer_refresh(mp_obj_t self_in) {
-    dotclockframebuffer_framebuffer_obj_t *self = (dotclockframebuffer_framebuffer_obj_t *)self_in;
+    dotclockframebuffer_framebuffer_obj_t *self = native_framebuffer(self_in);
     check_for_deinit(self);
     common_hal_dotclockframebuffer_framebuffer_refresh(self);
     return mp_const_none;
@@ -184,7 +187,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(dotclockframebuffer_framebuffer_refresh_obj, dotclockf
 //|     refresh_rate: float
 //|     """The pixel refresh rate of the display, in Hz"""
 static mp_obj_t dotclockframebuffer_framebuffer_get_refresh_rate(mp_obj_t self_in) {
-    dotclockframebuffer_framebuffer_obj_t *self = (dotclockframebuffer_framebuffer_obj_t *)self_in;
+    dotclockframebuffer_framebuffer_obj_t *self = native_framebuffer(self_in);
     check_for_deinit(self);
     return MP_OBJ_NEW_SMALL_INT(common_hal_dotclockframebuffer_framebuffer_get_refresh_rate(self));
 }
@@ -195,7 +198,7 @@ MP_PROPERTY_GETTER(dotclockframebuffer_framebuffer_refresh_rate_obj,
 //|     frequency: int
 //|     """The pixel frequency of the display, in Hz"""
 static mp_obj_t dotclockframebuffer_framebuffer_get_frequency(mp_obj_t self_in) {
-    dotclockframebuffer_framebuffer_obj_t *self = (dotclockframebuffer_framebuffer_obj_t *)self_in;
+    dotclockframebuffer_framebuffer_obj_t *self = native_framebuffer(self_in);
     check_for_deinit(self);
     return MP_OBJ_NEW_SMALL_INT(common_hal_dotclockframebuffer_framebuffer_get_frequency(self));
 }
@@ -206,7 +209,7 @@ MP_PROPERTY_GETTER(dotclockframebuffer_framebuffer_frequency_obj,
 //|     width: int
 //|     """The width of the display, in pixels"""
 static mp_obj_t dotclockframebuffer_framebuffer_get_width(mp_obj_t self_in) {
-    dotclockframebuffer_framebuffer_obj_t *self = (dotclockframebuffer_framebuffer_obj_t *)self_in;
+    dotclockframebuffer_framebuffer_obj_t *self = native_framebuffer(self_in);
     check_for_deinit(self);
     return MP_OBJ_NEW_SMALL_INT(common_hal_dotclockframebuffer_framebuffer_get_width(self));
 }
@@ -218,7 +221,7 @@ MP_PROPERTY_GETTER(dotclockframebuffer_framebuffer_width_obj,
 //|     """The height of the display, in pixels"""
 //|
 static mp_obj_t dotclockframebuffer_framebuffer_get_height(mp_obj_t self_in) {
-    dotclockframebuffer_framebuffer_obj_t *self = (dotclockframebuffer_framebuffer_obj_t *)self_in;
+    dotclockframebuffer_framebuffer_obj_t *self = native_framebuffer(self_in);
     check_for_deinit(self);
     return MP_OBJ_NEW_SMALL_INT(common_hal_dotclockframebuffer_framebuffer_get_height(self));
 }
@@ -236,7 +239,7 @@ MP_PROPERTY_GETTER(dotclockframebuffer_framebuffer_height_obj,
 //|     On Espressif this value is **guaranteed** to be a multiple of the 2 (i.e., it is a whole number of pixels)"""
 //|
 static mp_obj_t dotclockframebuffer_framebuffer_get_row_stride(mp_obj_t self_in) {
-    dotclockframebuffer_framebuffer_obj_t *self = (dotclockframebuffer_framebuffer_obj_t *)self_in;
+    dotclockframebuffer_framebuffer_obj_t *self = native_framebuffer(self_in);
     check_for_deinit(self);
     return MP_OBJ_NEW_SMALL_INT(common_hal_dotclockframebuffer_framebuffer_get_row_stride(self));
 }
@@ -255,7 +258,7 @@ MP_PROPERTY_GETTER(dotclockframebuffer_framebuffer_row_stride_obj,
 //|
 //|
 static mp_obj_t dotclockframebuffer_framebuffer_get_first_pixel_offset(mp_obj_t self_in) {
-    dotclockframebuffer_framebuffer_obj_t *self = (dotclockframebuffer_framebuffer_obj_t *)self_in;
+    dotclockframebuffer_framebuffer_obj_t *self = native_framebuffer(self_in);
     check_for_deinit(self);
     return MP_OBJ_NEW_SMALL_INT(common_hal_dotclockframebuffer_framebuffer_get_first_pixel_offset(self));
 }
@@ -265,7 +268,7 @@ MP_PROPERTY_GETTER(dotclockframebuffer_framebuffer_first_pixel_offset_obj,
     (mp_obj_t)&dotclockframebuffer_framebuffer_get_first_pixel_offset_obj);
 
 static mp_int_t dotclockframebuffer_framebuffer_get_buffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags) {
-    dotclockframebuffer_framebuffer_obj_t *self = (dotclockframebuffer_framebuffer_obj_t *)self_in;
+    dotclockframebuffer_framebuffer_obj_t *self = native_framebuffer(self_in);
     // a readonly framebuffer would be unusual but not impossible
     if ((flags & MP_BUFFER_WRITE) && !(self->bufinfo.typecode & MP_OBJ_ARRAY_TYPECODE_FLAG_RW)) {
         return 1;
@@ -279,12 +282,12 @@ static mp_int_t dotclockframebuffer_framebuffer_get_buffer(mp_obj_t self_in, mp_
 // avoiding a type cast that can hide errors
 static void dotclockframebuffer_framebuffer_swapbuffers(mp_obj_t self_in, uint8_t *dirty_row_bitmap) {
     (void)dirty_row_bitmap;
-    dotclockframebuffer_framebuffer_obj_t *self = (dotclockframebuffer_framebuffer_obj_t *)self_in;
+    dotclockframebuffer_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_dotclockframebuffer_framebuffer_refresh(self);
 }
 
 static void dotclockframebuffer_framebuffer_deinit_proto(mp_obj_t self_in) {
-    common_hal_dotclockframebuffer_framebuffer_deinit(self_in);
+    common_hal_dotclockframebuffer_framebuffer_deinit(MP_OBJ_TO_PTR(self_in));
 }
 
 static float dotclockframebuffer_framebuffer_get_brightness_proto(mp_obj_t self_in) {
@@ -296,11 +299,11 @@ static bool dotclockframebuffer_framebuffer_set_brightness_proto(mp_obj_t self_i
 }
 
 static int dotclockframebuffer_framebuffer_get_width_proto(mp_obj_t self_in) {
-    return common_hal_dotclockframebuffer_framebuffer_get_width(self_in);
+    return common_hal_dotclockframebuffer_framebuffer_get_width(MP_OBJ_TO_PTR(self_in));
 }
 
 static int dotclockframebuffer_framebuffer_get_height_proto(mp_obj_t self_in) {
-    return common_hal_dotclockframebuffer_framebuffer_get_height(self_in);
+    return common_hal_dotclockframebuffer_framebuffer_get_height(MP_OBJ_TO_PTR(self_in));
 }
 
 static int dotclockframebuffer_framebuffer_get_color_depth_proto(mp_obj_t self_in) {
@@ -312,22 +315,22 @@ static int dotclockframebuffer_framebuffer_get_bytes_per_cell_proto(mp_obj_t sel
 }
 
 static int dotclockframebuffer_framebuffer_get_native_frames_per_second_proto(mp_obj_t self_in) {
-    return common_hal_dotclockframebuffer_framebuffer_get_refresh_rate(self_in);
+    return common_hal_dotclockframebuffer_framebuffer_get_refresh_rate(MP_OBJ_TO_PTR(self_in));
 }
 
 static void dotclockframebuffer_framebuffer_get_bufinfo(mp_obj_t self_in, mp_buffer_info_t *bufinfo) {
-    dotclockframebuffer_framebuffer_obj_t *self = (dotclockframebuffer_framebuffer_obj_t *)self_in;
+    dotclockframebuffer_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
     *bufinfo = self->bufinfo;
 }
 
 static int dotclockframebuffer_framebuffer_get_row_stride_proto(mp_obj_t self_in) {
-    dotclockframebuffer_framebuffer_obj_t *self = (dotclockframebuffer_framebuffer_obj_t *)self_in;
+    dotclockframebuffer_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_dotclockframebuffer_framebuffer_get_row_stride(self);
 }
 
 static int dotclockframebuffer_framebuffer_get_first_pixel_offset_proto(mp_obj_t self_in) {
-    dotclockframebuffer_framebuffer_obj_t *self = (dotclockframebuffer_framebuffer_obj_t *)self_in;
+    dotclockframebuffer_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_dotclockframebuffer_framebuffer_get_first_pixel_offset(self);
 }
 
@@ -348,7 +351,28 @@ static const framebuffer_p_t dotclockframebuffer_framebuffer_proto = {
 };
 
 
+static mp_obj_t dotclockframebuffer_framebuffer_deinit(mp_obj_t self_in) {
+    displayio_bus_deinit_obj(self_in, &dotclockframebuffer_framebuffer_type);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(dotclockframebuffer_framebuffer_deinit_obj, dotclockframebuffer_framebuffer_deinit);
+static mp_obj_t dotclockframebuffer_framebuffer___del__(mp_obj_t self_in) {
+    displayio_bus_proxy_finalise(MP_OBJ_TO_PTR(self_in));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(dotclockframebuffer_framebuffer___del___obj, dotclockframebuffer_framebuffer___del__);
+
+static void dotclock_protocol_deinit(void *self) {
+    common_hal_dotclockframebuffer_framebuffer_deinit(self);
+}
+
+const displayio_protocol_t dotclockframebuffer_framebuffer_protocol = {
+    .deinit = dotclock_protocol_deinit,
+};
+
 static const mp_rom_map_elem_t dotclockframebuffer_framebuffer_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&dotclockframebuffer_framebuffer_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&dotclockframebuffer_framebuffer___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&dotclockframebuffer_framebuffer_width_obj) },
     { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_PTR(&dotclockframebuffer_framebuffer_height_obj) },
     { MP_ROM_QSTR(MP_QSTR_row_stride), MP_ROM_PTR(&dotclockframebuffer_framebuffer_row_stride_obj) },

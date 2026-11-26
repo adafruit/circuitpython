@@ -13,6 +13,7 @@
 #include "shared-module/displayio/Group.h"
 
 extern const mp_obj_type_t paralleldisplaybus_parallelbus_type;
+extern const displayio_protocol_t paralleldisplaybus_parallelbus_protocol;
 
 void common_hal_paralleldisplaybus_parallelbus_construct(paralleldisplaybus_parallelbus_obj_t *self,
     const mcu_pin_obj_t *data0, const mcu_pin_obj_t *command, const mcu_pin_obj_t *chip_select,
@@ -36,4 +37,3 @@ void common_hal_paralleldisplaybus_parallelbus_end_transaction(mp_obj_t self);
 
 // The ParallelBus object always lives off the MP heap. So, code must collect any pointers
 // back to the MP heap manually. Otherwise they'll get freed.
-void common_hal_paralleldisplaybus_parallelbus_collect_ptrs(mp_obj_t self);

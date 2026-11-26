@@ -63,27 +63,24 @@ static mp_obj_t zephyr_display_display_make_new(const mp_obj_type_t *type,
 
     // The display device is a singleton and LVGL drives only one display at a time, so the one
     // board_init() made has to be released first (as with any other display class).
-    primary_display_t *display_obj = allocate_display_or_raise();
-    zephyr_display_display_obj_t *self = &display_obj->zephyr_display;
-    self->base.type = &zephyr_display_display_type;
-    common_hal_zephyr_display_display_construct_from_device(self, display_dev, rotation,
-        args[ARG_auto_refresh].u_bool);
-    return MP_OBJ_FROM_PTR(self);
+    zephyr_display_display_obj_t *self = displayio_native_init(NULL, &zephyr_display_display_protocol,
+        &zephyr_display_display_type, sizeof(*self), MP_OBJ_NULL, false);
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        common_hal_zephyr_display_display_construct_from_device(self, display_dev, rotation,
+            args[ARG_auto_refresh].u_bool);
+        mp_obj_t proxy = displayio_register(MP_OBJ_FROM_PTR(self));
+        nlr_pop();
+        return proxy;
+    }
+    displayio_construct_failed(MP_OBJ_FROM_PTR(self));
+    nlr_jump(nlr.ret_val);
 }
 
 // Helper to ensure we have the native super class instead of a subclass.
 // Raises if the display has been released.
 static zephyr_display_display_obj_t *native_display(mp_obj_t display_obj) {
-    mp_obj_t native = mp_obj_cast_to_native_base(display_obj, &zephyr_display_display_type);
-    if (native == MP_OBJ_NULL) {
-        raise_deinited_error();
-    }
-    mp_obj_assert_native_inited(native);
-    zephyr_display_display_obj_t *self = MP_OBJ_TO_PTR(native);
-    if (self->base.type != &zephyr_display_display_type) {
-        raise_deinited_error();
-    }
-    return self;
+    return displayio_proxy_native(display_obj, &zephyr_display_display_type);
 }
 
 //|     def deinit(self) -> None:
@@ -91,18 +88,58 @@ static zephyr_display_display_obj_t *native_display(mp_obj_t display_obj) {
 //|
 //|         To release the display built during startup, use
 //|         ``supervisor.runtime.display.deinit()``.
-//|         As of CircuitPython 11.0.0, this replaces `displayio.release_displays()`, which is deprecated.
 //|         """
 //|         ...
 //|
 static mp_obj_t zephyr_display_display_obj_deinit(mp_obj_t self_in) {
-    mp_obj_t native = mp_obj_cast_to_native_base(self_in, &zephyr_display_display_type);
+    mp_obj_t native = displayio_native_obj(self_in, &zephyr_display_display_type);
     if (native != MP_OBJ_NULL) {
-        common_hal_displayio_deinit_display(native);
+        displayio_display_deinit(native);
     }
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(zephyr_display_display_deinit_obj, zephyr_display_display_obj_deinit);
+
+static mp_obj_t zephyr_display_display_obj___del__(mp_obj_t self_in) {
+    displayio_display_proxy_finalise(MP_OBJ_TO_PTR(self_in));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(zephyr_display_display___del___obj, zephyr_display_display_obj___del__);
+
+static void zephyr_protocol_deinit(void *self) {
+    release_zephyr_display(self);
+}
+
+static void *zephyr_protocol_start_vm(void *self) {
+    return zephyr_display_display_start_vm(self);
+}
+
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+static bool zephyr_protocol_stop_vm(void *self) {
+    zephyr_display_display_reset(self);
+    return true;
+}
+#endif
+
+
+#if !CIRCUITPY_DISPLAYIO_LVGL
+static void zephyr_protocol_background(void *self) {
+    zephyr_display_display_background(self);
+}
+#endif
+
+const displayio_protocol_t zephyr_display_display_protocol = {
+    .deinit = zephyr_protocol_deinit,
+    .start_vm = zephyr_protocol_start_vm,
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    .stop_vm = zephyr_protocol_stop_vm,
+    #endif
+    #if !CIRCUITPY_DISPLAYIO_LVGL
+    .background = zephyr_protocol_background,
+    #else
+    .background = displayio_display_background_noop,
+    #endif
+};
 
 static mp_obj_t zephyr_display_display_obj_show(mp_obj_t self_in, mp_obj_t group_in) {
     (void)self_in;
@@ -270,6 +307,8 @@ MP_PROPERTY_GETSET(zephyr_display_display_rotation_obj,
 //|
 //|     A `displayio.Group` can only be the root group of one display at a time. Setting a
 //|     group that is already in use raises `ValueError`."""
+//|
+//|
 static mp_obj_t zephyr_display_display_obj_get_root_group(mp_obj_t self_in) {
     zephyr_display_display_obj_t *self = native_display(self_in);
     return common_hal_zephyr_display_display_get_root_group(self);
@@ -287,6 +326,7 @@ static mp_obj_t zephyr_display_display_obj_set_root_group(mp_obj_t self_in, mp_o
     if (!ok) {
         mp_raise_ValueError(MP_ERROR_TEXT("Group already used"));
     }
+    displayio_display_set_root_group_reference(MP_OBJ_FROM_PTR(self), group_in);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(zephyr_display_display_set_root_group_obj, zephyr_display_display_obj_set_root_group);
@@ -297,6 +337,7 @@ MP_PROPERTY_GETSET(zephyr_display_display_root_group_obj,
 
 static const mp_rom_map_elem_t zephyr_display_display_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&zephyr_display_display_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&zephyr_display_display___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_show), MP_ROM_PTR(&zephyr_display_display_show_obj) },
     { MP_ROM_QSTR(MP_QSTR_refresh), MP_ROM_PTR(&zephyr_display_display_refresh_obj) },
 

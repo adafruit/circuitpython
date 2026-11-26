@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include <zephyr/device.h>
 #include <zephyr/drivers/display.h>
 
@@ -14,6 +16,7 @@
 
 typedef struct {
     mp_obj_base_t base;
+    displayio_display_link_t link;
     displayio_display_core_t core;
     const struct device *device;
     struct display_capabilities capabilities;
@@ -26,6 +29,6 @@ typedef struct {
 } zephyr_display_display_obj_t;
 
 void zephyr_display_display_background(zephyr_display_display_obj_t *self);
-void zephyr_display_display_collect_ptrs(zephyr_display_display_obj_t *self);
+mp_obj_t zephyr_display_display_start_vm(zephyr_display_display_obj_t *self);
 void zephyr_display_display_reset(zephyr_display_display_obj_t *self);
 void release_zephyr_display(zephyr_display_display_obj_t *self);

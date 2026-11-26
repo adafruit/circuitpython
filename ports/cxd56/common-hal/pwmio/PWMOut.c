@@ -89,6 +89,19 @@ bool common_hal_pwmio_pwmout_deinited(pwmio_pwmout_obj_t *self) {
     return self->pin == NULL;
 }
 
+bool common_hal_pwmio_pwmout_is_moveable(pwmio_pwmout_obj_t *self) {
+    return !common_hal_pwmio_pwmout_deinited(self);
+}
+
+bool common_hal_pwmio_pwmout_move(pwmio_pwmout_obj_t *self, pwmio_pwmout_obj_t *destination) {
+    if (!common_hal_pwmio_pwmout_is_moveable(self)) {
+        return false;
+    }
+    *destination = *self;
+    self->pin = NULL;
+    return true;
+}
+
 void common_hal_pwmio_pwmout_set_duty_cycle(pwmio_pwmout_obj_t *self, uint16_t duty) {
     self->info.duty = duty;
 

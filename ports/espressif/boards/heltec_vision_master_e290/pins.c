@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 
 #include "shared-bindings/board/__init__.h"
+
+#include "board.h"
 #include "shared-module/displayio/__init__.h"
 
 CIRCUITPY_BOARD_BUS_SINGLETON(epd_spi, spi, 0)
@@ -70,8 +72,8 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_UART), MP_ROM_PTR(&board_uart_obj) },
     { MP_ROM_QSTR(MP_QSTR_EPD_SPI), MP_ROM_PTR(&board_epd_spi_obj) },
     { MP_ROM_QSTR(MP_QSTR_LORA_SPI), MP_ROM_PTR(&board_lora_spi_obj) },
-    { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&displays[0].epaper_display)},
 
+    { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&board_display) },
 };
 
 MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);

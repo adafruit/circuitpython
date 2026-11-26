@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include "shared-module/framebufferio/__init__.h"
 #include "py/obj.h"
 #include "py/proto.h"
@@ -19,6 +21,7 @@
 
 typedef struct {
     mp_obj_base_t base;
+    displayio_display_link_t link;
     displayio_display_core_t core;
     mp_obj_t framebuffer;
     const struct _framebuffer_p_t *framebuffer_protocol;
@@ -48,7 +51,7 @@ void framebufferio_framebufferdisplay_background(framebufferio_framebufferdispla
 void release_framebufferdisplay(framebufferio_framebufferdisplay_obj_t *self);
 void framebufferio_framebufferdisplay_reset(framebufferio_framebufferdisplay_obj_t *self);
 
-void framebufferio_framebufferdisplay_collect_ptrs(framebufferio_framebufferdisplay_obj_t *self);
+mp_obj_t framebufferio_framebufferdisplay_start_vm(framebufferio_framebufferdisplay_obj_t *self);
 
 mp_obj_t common_hal_framebufferio_framebufferdisplay_get_framebuffer(framebufferio_framebufferdisplay_obj_t *self);
 

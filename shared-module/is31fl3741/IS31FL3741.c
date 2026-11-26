@@ -36,6 +36,23 @@ bool common_hal_is31fl3741_IS31FL3741_deinited(is31fl3741_IS31FL3741_obj_t *self
     return self->i2c == NULL;
 }
 
+bool common_hal_is31fl3741_IS31FL3741_is_moveable(is31fl3741_IS31FL3741_obj_t *self) {
+    return !common_hal_is31fl3741_IS31FL3741_deinited(self) &&
+           common_hal_busio_i2c_is_moveable(self->i2c);
+}
+
+bool common_hal_is31fl3741_IS31FL3741_move(is31fl3741_IS31FL3741_obj_t *self, is31fl3741_IS31FL3741_obj_t *destination) {
+    if (!common_hal_is31fl3741_IS31FL3741_is_moveable(self)) {
+        return false;
+    }
+    *destination = *self;
+    if (destination->i2c == &self->inline_i2c) {
+        destination->i2c = &destination->inline_i2c;
+    }
+    common_hal_is31fl3741_IS31FL3741_mark_deinit(self);
+    return true;
+}
+
 void common_hal_is31fl3741_IS31FL3741_deinit(is31fl3741_IS31FL3741_obj_t *self) {
     if (common_hal_is31fl3741_IS31FL3741_deinited(self)) {
         return;

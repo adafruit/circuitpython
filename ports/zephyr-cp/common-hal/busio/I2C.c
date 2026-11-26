@@ -109,6 +109,19 @@ void common_hal_busio_i2c_mark_deinit(busio_i2c_obj_t *self) {
     }
 }
 
+bool common_hal_busio_i2c_is_moveable(busio_i2c_obj_t *self) {
+    return !common_hal_busio_i2c_deinited(self) && !self->has_lock;
+}
+
+bool common_hal_busio_i2c_move(busio_i2c_obj_t *self, busio_i2c_obj_t *destination) {
+    if (!common_hal_busio_i2c_is_moveable(self)) {
+        return false;
+    }
+    *destination = *self;
+    common_hal_busio_i2c_mark_deinit(self);
+    return true;
+}
+
 bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
     if (common_hal_busio_i2c_deinited(self)) {
         return false;

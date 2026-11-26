@@ -335,6 +335,7 @@ void common_hal_framebufferio_framebufferdisplay_construct(framebufferio_framebu
         mp_raise_RuntimeError(MP_ERROR_TEXT("LVGL display create failed"));
     }
     lv_display_set_user_data(self->lv_display, self);
+    lv_display_set_driver_data(self->lv_display, self);
     lv_display_set_default(self->lv_display);
     displayio_lvgl_register_display(self->lv_display);
     self->lv_color_format = framebufferio_lvgl_color_format(self);
@@ -377,6 +378,8 @@ void common_hal_framebufferio_framebufferdisplay_construct(framebufferio_framebu
     nlr_pop_jump_callback(false);
     displayio_lvgl_unlock();
     common_hal_framebufferio_framebufferdisplay_set_auto_refresh(self, auto_refresh);
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 uint16_t common_hal_framebufferio_framebufferdisplay_get_width(framebufferio_framebufferdisplay_obj_t *self) {
@@ -404,6 +407,9 @@ bool common_hal_framebufferio_framebufferdisplay_set_brightness(framebufferio_fr
 }
 
 mp_obj_t common_hal_framebufferio_framebufferdisplay_get_framebuffer(framebufferio_framebufferdisplay_obj_t *self) {
+    if (self->link.bus != MP_OBJ_NULL) {
+        return displayio_bus_proxy(self->link.bus);
+    }
     return self->framebuffer;
 }
 
@@ -451,7 +457,7 @@ void common_hal_framebufferio_framebufferdisplay_set_rotation(framebufferio_fram
             mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("LVGL buffer alloc failed"));
         }
         lv_display_set_default(self->lv_display);
-        if (self == &displays[0].framebuffer_display) {
+        if (displayio_is_primary_display(self)) {
             supervisor_stop_terminal();
             supervisor_start_terminal(self->core.width, self->core.height);
         }
@@ -554,7 +560,7 @@ void release_framebufferdisplay(framebufferio_framebufferdisplay_obj_t *self) {
     nlr_jump_callback_node_t cleanup;
     displayio_lvgl_lock_with_cleanup(&cleanup);
     self->lv_paced = false;
-    displayio_lvgl_set_root_group(NULL);
+    displayio_lvgl_detach_display(self->lv_display);
     if (self->lv_display != NULL) {
         lv_display_delete(self->lv_display);
         self->lv_display = NULL;
@@ -567,26 +573,32 @@ void release_framebufferdisplay(framebufferio_framebufferdisplay_obj_t *self) {
         self->lv_dirty_row_bitmask_size = 0;
     }
     release_display_core(&self->core);
-    self->framebuffer_protocol->deinit(self->framebuffer);
-    self->base.type = &mp_type_NoneType;
+    // The central bus release operation deinitializes and frees the framebuffer.
 }
 
-void framebufferio_framebufferdisplay_collect_ptrs(framebufferio_framebufferdisplay_obj_t *self) {
-    gc_collect_ptr(self->framebuffer);
-    displayio_display_core_collect_ptrs(&self->core);
+mp_obj_t framebufferio_framebufferdisplay_start_vm(framebufferio_framebufferdisplay_obj_t *self) {
+    mp_obj_t refs = mp_obj_new_list(2, NULL);
+    mp_obj_t framebuffer = self->link.bus == MP_OBJ_NULL ? self->framebuffer : mp_const_none;
+    mp_obj_list_store(refs, MP_OBJ_NEW_SMALL_INT(0), framebuffer);
+    mp_obj_t root_group = self->core.current_group == NULL ? mp_const_none : MP_OBJ_FROM_PTR(self->core.current_group);
+    mp_obj_list_store(refs, MP_OBJ_NEW_SMALL_INT(1), root_group);
+    return refs;
 }
+
 
 void framebufferio_framebufferdisplay_reset(framebufferio_framebufferdisplay_obj_t *self) {
     const mp_obj_type_t *fb_type = mp_obj_get_type(self->framebuffer);
     if (fb_type != NULL && fb_type != &mp_type_NoneType) {
         common_hal_framebufferio_framebufferdisplay_set_auto_refresh(self, true);
-        displayio_display_core_set_root_group(&self->core, &circuitpython_splash);
         nlr_jump_callback_node_t cleanup;
         displayio_lvgl_lock_with_cleanup(&cleanup);
-        if (self->lv_display != NULL) {
+        displayio_lvgl_detach_display(self->lv_display);
+        displayio_display_core_set_root_group(&self->core, NULL);
+        if (displayio_is_primary_display(self) && self->lv_display != NULL) {
+            displayio_display_core_set_root_group(&self->core, &circuitpython_splash);
             lv_display_set_default(self->lv_display);
+            displayio_lvgl_set_root_group(&circuitpython_splash);
         }
-        displayio_lvgl_set_root_group(&circuitpython_splash);
         // Render the terminal now. The REPL starts next, and the display may not get another
         // background tick before its first writes; make sure the framebuffer already holds the
         // splash rather than whatever the user's code left on screen.

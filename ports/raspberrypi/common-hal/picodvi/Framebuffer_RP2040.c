@@ -25,6 +25,11 @@
 
 picodvi_framebuffer_obj_t *active_picodvi = NULL;
 
+mp_obj_t picodvi_framebuffer_start_vm(picodvi_framebuffer_obj_t *self) {
+    (void)self;
+    return mp_const_none;
+}
+
 static void __not_in_flash_func(core1_main)(void) {
     // The MPU is reset before this starts.
 
@@ -290,6 +295,8 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     // doesn't want us to.
     while (queue_get_level(&self->dvi.q_colour_valid) == 2) {
     }
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 static void _turn_off_dma(uint8_t channel) {

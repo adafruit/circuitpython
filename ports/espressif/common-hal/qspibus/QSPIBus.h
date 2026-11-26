@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -17,6 +19,7 @@
 
 typedef struct {
     mp_obj_base_t base;
+    displayio_bus_lifetime_t bus_lifetime;
 
     // ESP LCD panel IO handle used for QSPI transactions.
     esp_lcd_panel_io_handle_t io_handle;

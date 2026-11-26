@@ -21,7 +21,7 @@ typedef struct {
     mxc_i2c_regs_t *i2c_regs;
     const mcu_pin_obj_t *scl;
     const mcu_pin_obj_t *sda;
-    const int frequency;
+    uint32_t frequency;
 
     uint32_t timeout;
     bool has_lock;

@@ -293,6 +293,12 @@ CFLAGS += -DCIRCUITPY_COUNTIO=$(CIRCUITPY_COUNTIO)
 CIRCUITPY_DISPLAYIO ?= $(CIRCUITPY_FULL_BUILD)
 CFLAGS += -DCIRCUITPY_DISPLAYIO=$(CIRCUITPY_DISPLAYIO)
 
+# Allocate VM displays and buses directly on the VM heap, without proxies or
+# resource adoption. Only board displays survive a VM stop. This saves flash
+# on small builds at the cost of not keeping user-created displays across reload.
+CIRCUITPY_DISPLAY_LIFETIME_SIMPLE ?= 0
+CFLAGS += -DCIRCUITPY_DISPLAY_LIFETIME_SIMPLE=$(CIRCUITPY_DISPLAY_LIFETIME_SIMPLE)
+
 # Select the displayio compositing core implementation: 0 = legacy scanline core (default),
 # 1 = LVGL-based core (shared-module/displayio/lvgl). The LVGL variant requires LVGL be
 # available to the port at build time.

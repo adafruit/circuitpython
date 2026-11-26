@@ -40,7 +40,6 @@ static mp_map_elem_t board_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_IOEXPANDER_INT), MP_OBJ_FROM_PTR(&pin_GPIO34) },
 
-    { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_OBJ_FROM_PTR(&displays[0].display)},
     { MP_ROM_QSTR(MP_QSTR_I2C), MP_OBJ_FROM_PTR(&board_i2c_obj) },
 
     // Filled in by board_init()
@@ -65,6 +64,7 @@ static mp_map_elem_t board_module_globals_table[] = {
     // Only on some variants
     { MP_ROM_QSTR(MP_QSTR_RTC_INT), mp_const_none },
 
+    { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&board_display) },
 };
 MP_DEFINE_MUTABLE_DICT(board_module_globals, board_module_globals_table);
 

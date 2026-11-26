@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include "py/obj.h"
 #include "shared-bindings/busio/SPI.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
@@ -13,6 +15,7 @@
 
 typedef struct {
     mp_obj_base_t base;
+    displayio_bus_lifetime_t bus_lifetime;
     busio_spi_obj_t *bus;
     busio_spi_obj_t inline_bus;
     digitalio_digitalinout_obj_t chip_select;
@@ -26,5 +29,8 @@ typedef struct {
 } sharpdisplay_framebuffer_obj_t;
 
 extern const framebuffer_p_t sharpdisplay_framebuffer_proto;
+extern const displayio_protocol_t sharpdisplay_framebuffer_protocol;
+
+mp_obj_t sharpdisplay_framebuffer_start_vm(sharpdisplay_framebuffer_obj_t *self);
 
 void common_hal_sharpdisplay_framebuffer_collect_ptrs(sharpdisplay_framebuffer_obj_t *);

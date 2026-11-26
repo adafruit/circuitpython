@@ -104,15 +104,22 @@ static mp_obj_t aurora_epaper_framebuffer_make_new(const mp_obj_type_t *type, si
     const mcu_pin_obj_t *power = validate_obj_is_free_pin_or_none(args[ARG_power].u_obj, MP_QSTR_power);
 
     busio_spi_obj_t *spi = validate_obj_is_spi_bus(args[ARG_spi_bus].u_obj, MP_QSTR_spi_bus);
-    aurora_epaper_framebuffer_obj_t *self = &allocate_display_bus_or_raise()->aurora_epaper;
-    self->base.type = &aurora_framebuffer_type;
+    aurora_epaper_framebuffer_obj_t *self = displayio_native_init(NULL, &aurora_framebuffer_protocol,
+        &aurora_framebuffer_type, sizeof(*self), MP_OBJ_NULL, false);
 
-    common_hal_aurora_epaper_framebuffer_construct(self, spi, chip_select, reset, busy, discharge, power, args[ARG_width].u_int, args[ARG_height].u_int, args[ARG_free_bus].u_bool);
-    return MP_OBJ_FROM_PTR(self);
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        common_hal_aurora_epaper_framebuffer_construct(self, spi, chip_select, reset, busy, discharge, power, args[ARG_width].u_int, args[ARG_height].u_int, args[ARG_free_bus].u_bool);
+        mp_obj_t proxy = displayio_register(MP_OBJ_FROM_PTR(self));
+        nlr_pop();
+        return proxy;
+    }
+    displayio_construct_failed(MP_OBJ_FROM_PTR(self));
+    nlr_jump(nlr.ret_val);
 }
 
 static mp_int_t aurora_epaper_framebuffer_get_buffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags) {
-    aurora_epaper_framebuffer_obj_t *self = self_in;
+    aurora_epaper_framebuffer_obj_t *self = displayio_proxy_native(self_in, &aurora_framebuffer_type);
     if ((flags & MP_BUFFER_WRITE) && !(self->bufinfo.typecode & MP_OBJ_ARRAY_TYPECODE_FLAG_RW)) {
         return 1;
     }
@@ -127,12 +134,16 @@ static mp_int_t aurora_epaper_framebuffer_get_buffer(mp_obj_t self_in, mp_buffer
 //|         ...
 //|
 static mp_obj_t aurora_epaper_framebuffer_deinit(mp_obj_t self_in) {
-    aurora_epaper_framebuffer_obj_t *self = (aurora_epaper_framebuffer_obj_t *)self_in;
-    common_hal_aurora_epaper_framebuffer_deinit(self);
-
+    displayio_bus_deinit_obj(self_in, &aurora_framebuffer_type);
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(aurora_epaper_framebuffer_deinit_obj, aurora_epaper_framebuffer_deinit);
+
+static mp_obj_t aurora_epaper_framebuffer___del__(mp_obj_t self_in) {
+    displayio_bus_proxy_finalise(MP_OBJ_TO_PTR(self_in));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(aurora_epaper_framebuffer___del___obj, aurora_epaper_framebuffer___del__);
 
 //|     def set_temperature(self, celsius: int) -> None:
 //|         """Set the ambient temperature (in celsius) for the display driver.
@@ -141,7 +152,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(aurora_epaper_framebuffer_deinit_obj, aurora_ep
 //|         ...
 //|
 static mp_obj_t aurora_epaper_frambuffer_set_temperature(mp_obj_t self_in, mp_obj_t temperature) {
-    aurora_epaper_framebuffer_obj_t *self = (aurora_epaper_framebuffer_obj_t *)self_in;
+    aurora_epaper_framebuffer_obj_t *self = displayio_proxy_native(self_in, &aurora_framebuffer_type);
 
     common_hal_aurora_epaper_framebuffer_set_temperature(self, mp_obj_get_float(temperature));
 
@@ -156,14 +167,14 @@ static MP_DEFINE_CONST_FUN_OBJ_2(aurora_epaper_frambuffer_set_temperature_obj, a
 //|
 //|
 static mp_obj_t aurora_epaper_framebuffer_get_free_bus(mp_obj_t self_in) {
-    aurora_epaper_framebuffer_obj_t *self = (aurora_epaper_framebuffer_obj_t *)self_in;
+    aurora_epaper_framebuffer_obj_t *self = displayio_proxy_native(self_in, &aurora_framebuffer_type);
     return mp_obj_new_bool(self->free_bus);
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(aurora_epaper_framebuffer_get_free_bus_obj, aurora_epaper_framebuffer_get_free_bus);
 
 
 static mp_obj_t aurora_epaper_framebuffer_set_free_bus(mp_obj_t self_in, mp_obj_t free_bus) {
-    aurora_epaper_framebuffer_obj_t *self = (aurora_epaper_framebuffer_obj_t *)self_in;
+    aurora_epaper_framebuffer_obj_t *self = displayio_proxy_native(self_in, &aurora_framebuffer_type);
     common_hal_aurora_epaper_framebuffer_set_free_bus(self, mp_obj_is_true(free_bus));
     return mp_const_none;
 }
@@ -175,7 +186,7 @@ MP_PROPERTY_GETSET(aurora_epaper_framebuffer_free_bus_obj,
 
 static const mp_rom_map_elem_t aurora_epaper_framebuffer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&aurora_epaper_framebuffer_deinit_obj) },
-    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&aurora_epaper_framebuffer_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&aurora_epaper_framebuffer___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_set_temperature), MP_ROM_PTR(&aurora_epaper_frambuffer_set_temperature_obj) },
     { MP_ROM_QSTR(MP_QSTR_free_bus), MP_ROM_PTR(&aurora_epaper_framebuffer_free_bus_obj) },
 };

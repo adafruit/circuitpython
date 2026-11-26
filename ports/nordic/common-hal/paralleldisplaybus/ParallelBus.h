@@ -6,10 +6,13 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include "common-hal/digitalio/DigitalInOut.h"
 
 typedef struct {
     mp_obj_base_t base;
+    displayio_bus_lifetime_t bus_lifetime;
     uint8_t *bus;
     digitalio_digitalinout_obj_t command;
     digitalio_digitalinout_obj_t chip_select;

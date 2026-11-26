@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "shared-module/videocore/VideoBuffer.h"
+#include "shared-module/displayio/lifetime.h"
 
 #include "py/runtime.h"
 
@@ -212,7 +213,7 @@ static void videocore_videobuffer_compute_destination(
     }
 
     mp_buffer_info_t bufinfo;
-    self->framebuffer_protocol->get_bufinfo(self->framebuffer, &bufinfo);
+    self->framebuffer_protocol->get_bufinfo(videocore_videobuffer_framebuffer_native(self), &bufinfo);
     if (bufinfo.buf == NULL) {
         mp_raise_ValueError(MP_ERROR_TEXT("framebuffer went away"));
     }
@@ -255,7 +256,7 @@ void videocore_videobuffer_move_dest(videocore_videobuffer_obj_t *self) {
         return;
     }
     mp_buffer_info_t bufinfo;
-    self->framebuffer_protocol->get_bufinfo(self->framebuffer, &bufinfo);
+    self->framebuffer_protocol->get_bufinfo(videocore_videobuffer_framebuffer_native(self), &bufinfo);
     if (bufinfo.buf == NULL) {
         return;
     }
@@ -304,6 +305,11 @@ void videocore_videobuffer_move_dest(videocore_videobuffer_obj_t *self) {
         self->stream_base = dest.base;
         videocore_videobuffer_backend_source_changed(self);
     }
+}
+
+mp_obj_t videocore_videobuffer_framebuffer_native(videocore_videobuffer_obj_t *self) {
+    mp_obj_t native = displayio_bus_native(self->framebuffer);
+    return native == MP_OBJ_NULL ? self->framebuffer : native;
 }
 
 void common_hal_videocore_videobuffer_construct(videocore_videobuffer_obj_t *self, mp_obj_t framebuffer,

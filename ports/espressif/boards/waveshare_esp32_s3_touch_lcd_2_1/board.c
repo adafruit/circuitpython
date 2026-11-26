@@ -144,6 +144,9 @@ static void send_display_init_sequence(busio_i2c_obj_t *i2c, uint8_t idle_output
     gpio_reset_pin(LCD_SPI_SCK);
 }
 
+static dotclockframebuffer_framebuffer_obj_t board_display_bus;
+framebufferio_framebufferdisplay_obj_t board_display;
+
 static void display_init(void) {
     busio_i2c_obj_t i2c;
     i2c.base.type = &busio_i2c_type;
@@ -169,7 +172,11 @@ static void display_init(void) {
         frequency = 12000000;
     }
 
-    dotclockframebuffer_framebuffer_obj_t *framebuffer = &allocate_display_bus_or_raise()->dotclock;
+    dotclockframebuffer_framebuffer_obj_t *framebuffer = displayio_native_init(&board_display_bus, &dotclockframebuffer_framebuffer_protocol, &dotclockframebuffer_framebuffer_type, 0, MP_OBJ_NULL, true);
+
+    if (framebuffer == NULL) {
+        return;
+    }
     framebuffer->base.type = &dotclockframebuffer_framebuffer_type;
     common_hal_dotclockframebuffer_framebuffer_construct(
         framebuffer,
@@ -191,7 +198,11 @@ static void display_init(void) {
         0               // overscan left
         );
 
-    framebufferio_framebufferdisplay_obj_t *display = &allocate_display_or_raise()->framebuffer_display;
+    framebufferio_framebufferdisplay_obj_t *display = displayio_native_init(&board_display, &framebufferio_framebufferdisplay_protocol, &framebufferio_framebufferdisplay_type, 0, MP_OBJ_FROM_PTR(framebuffer), true);
+
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &framebufferio_framebufferdisplay_type;
     common_hal_framebufferio_framebufferdisplay_construct(
         display,

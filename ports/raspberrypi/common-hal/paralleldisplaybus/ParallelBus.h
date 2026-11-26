@@ -6,12 +6,15 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include "common-hal/digitalio/DigitalInOut.h"
 #include "bindings/rp2pio/StateMachine.h"
 #include "common-hal/rp2pio/StateMachine.h"
 
 typedef struct {
     mp_obj_base_t base;
+    displayio_bus_lifetime_t bus_lifetime;
     digitalio_digitalinout_obj_t command;
     digitalio_digitalinout_obj_t chip_select;
     digitalio_digitalinout_obj_t reset;

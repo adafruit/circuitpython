@@ -154,6 +154,8 @@ void common_hal_zephyr_display_display_construct_from_device(zephyr_display_disp
 
     displayio_display_core_set_root_group(&self->core, &circuitpython_splash);
     common_hal_zephyr_display_display_set_auto_refresh(self, auto_refresh);
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 uint16_t common_hal_zephyr_display_display_get_width(zephyr_display_display_obj_t *self) {
@@ -346,7 +348,7 @@ void common_hal_zephyr_display_display_set_rotation(zephyr_display_display_obj_t
 
     displayio_display_core_set_rotation(&self->core, rotation);
 
-    if (self == &displays[0].zephyr_display) {
+    if (displayio_is_primary_display(self)) {
         supervisor_stop_terminal();
         supervisor_start_terminal(self->core.width, self->core.height);
     }
@@ -413,15 +415,19 @@ void release_zephyr_display(zephyr_display_display_obj_t *self) {
     self->base.type = &mp_type_NoneType;
 }
 
-void zephyr_display_display_collect_ptrs(zephyr_display_display_obj_t *self) {
-    (void)self;
-    displayio_display_core_collect_ptrs(&self->core);
+mp_obj_t zephyr_display_display_start_vm(zephyr_display_display_obj_t *self) {
+    mp_obj_t root_group = self->core.current_group == NULL ? mp_const_none : MP_OBJ_FROM_PTR(self->core.current_group);
+    return mp_obj_new_list(1, (mp_obj_t[]) {root_group});
 }
+
 
 void zephyr_display_display_reset(zephyr_display_display_obj_t *self) {
     if (self->device != NULL && device_is_ready(self->device)) {
         common_hal_zephyr_display_display_set_auto_refresh(self, true);
-        displayio_display_core_set_root_group(&self->core, &circuitpython_splash);
+        displayio_group_t *group = displayio_is_primary_display(self) ? &circuitpython_splash : NULL;
+        if (!displayio_display_core_set_root_group(&self->core, group)) {
+            displayio_display_core_set_root_group(&self->core, NULL);
+        }
         self->core.full_refresh = true;
     } else {
         release_zephyr_display(self);

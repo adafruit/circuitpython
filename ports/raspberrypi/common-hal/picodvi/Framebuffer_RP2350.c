@@ -111,6 +111,36 @@ picodvi_framebuffer_obj_t *active_picodvi = NULL;
 
 #if CIRCUITPY_PICODVI_AUDIOOUT
 #include "common-hal/picodvi/AudioOut.h"
+
+mp_obj_t picodvi_framebuffer_start_vm(picodvi_framebuffer_obj_t *self) {
+    mp_obj_t sample = self->audioout == MP_OBJ_NULL ? MP_OBJ_NULL :
+        ((picodvi_audioout_obj_t *)MP_OBJ_TO_PTR(self->audioout))->sample;
+    return mp_obj_new_list(2, (mp_obj_t[]) {self->audioout, sample});
+}
+
+static void set_audioout_vm_reference(picodvi_framebuffer_obj_t *self, size_t index, mp_obj_t value) {
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    // The framebuffer is itself a GC object, so these fields are already scanned.
+    (void)self;
+    (void)index;
+    (void)value;
+    #else
+    if (self->bus_lifetime.proxy != MP_OBJ_NULL) {
+        displayio_proxy_t *proxy = MP_OBJ_TO_PTR(self->bus_lifetime.proxy);
+        mp_obj_list_store(MP_OBJ_FROM_PTR(proxy->vm), MP_OBJ_NEW_SMALL_INT(index), value);
+    }
+    #endif
+}
+
+void picodvi_framebuffer_set_audioout(picodvi_framebuffer_obj_t *self, mp_obj_t audioout) {
+    self->audioout = audioout;
+    set_audioout_vm_reference(self, 0, audioout);
+    set_audioout_vm_reference(self, 1, MP_OBJ_NULL);
+}
+
+void picodvi_framebuffer_set_audioout_sample(picodvi_framebuffer_obj_t *self, mp_obj_t sample) {
+    set_audioout_vm_reference(self, 1, sample);
+}
 #else
 static inline uint32_t *picodvi_audioout_next_frame(void) {
     return active_picodvi->dma_commands;
@@ -545,6 +575,8 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
 
     common_hal_picodvi_framebuffer_refresh(self);
     dma_irq_handler();
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 static void _turn_off_dma(int channel) {

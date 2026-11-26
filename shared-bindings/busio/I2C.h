@@ -24,6 +24,10 @@ extern void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
 
 extern void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self);
 extern bool common_hal_busio_i2c_deinited(busio_i2c_obj_t *self);
+// True when the live, idle bus can be relocated. move() returns false without
+// changing either object when relocation fails.
+extern bool common_hal_busio_i2c_is_moveable(busio_i2c_obj_t *self);
+extern bool common_hal_busio_i2c_move(busio_i2c_obj_t *self, busio_i2c_obj_t *destination);
 
 // Mark as deinit without deiniting. This is used by displayio after copying the
 // object elsewhere and prevents the heap from deiniting the object.

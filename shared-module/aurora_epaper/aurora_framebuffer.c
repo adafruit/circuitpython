@@ -103,6 +103,8 @@ void common_hal_aurora_epaper_framebuffer_construct(
 
     // By default free bus when deinit is called
     common_hal_aurora_epaper_framebuffer_set_free_bus(self, free_bus);
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 int common_hal_aurora_epaper_framebuffer_get_width(aurora_epaper_framebuffer_obj_t *self) {
@@ -543,15 +545,71 @@ void common_hal_aurora_epaper_framebuffer_collect_ptrs(aurora_epaper_framebuffer
     gc_collect_ptr(self->bus);
 }
 
+mp_obj_t aurora_epaper_framebuffer_start_vm(aurora_epaper_framebuffer_obj_t *self) {
+    if (self->bus == &self->inline_bus) {
+        busio_spi_obj_t *heap_bus = mp_obj_malloc_with_finaliser(busio_spi_obj_t, &busio_spi_type);
+        if (!common_hal_busio_spi_move(self->bus, heap_bus)) {
+            common_hal_busio_spi_deinit(self->bus);
+            m_free(heap_bus);
+            mp_raise_ValueError(MP_ERROR_TEXT("Display resources cannot move between VMs"));
+        }
+        self->bus = heap_bus;
+    }
+    return mp_obj_new_list(1, (mp_obj_t[]) {MP_OBJ_FROM_PTR(self->bus)});
+}
+
+static void aurora_protocol_deinit(void *self) {
+    common_hal_aurora_epaper_framebuffer_deinit(self);
+}
+
+static void *aurora_protocol_start_vm(void *self) {
+    return aurora_epaper_framebuffer_start_vm(self);
+}
+
+static bool aurora_protocol_is_moveable(void *self_in) {
+    aurora_epaper_framebuffer_obj_t *self = self_in;
+    return !gc_ptr_on_heap(self->bus) || common_hal_busio_spi_is_moveable(self->bus);
+}
+
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+static bool aurora_protocol_stop_vm(void *self_in) {
+    aurora_epaper_framebuffer_obj_t *self = self_in;
+    if (!aurora_protocol_is_moveable(self)) {
+        if (gc_ptr_on_heap(self->bus)) {
+            common_hal_busio_spi_deinit(self->bus);
+        }
+        return false;
+    }
+    if (gc_ptr_on_heap(self->bus)) {
+        if (!common_hal_busio_spi_move(self->bus, &self->inline_bus)) {
+            common_hal_busio_spi_deinit(self->bus);
+            return false;
+        }
+        self->bus = &self->inline_bus;
+        common_hal_aurora_epaper_framebuffer_set_free_bus(self, false);
+    }
+    return true;
+}
+#endif
+
+const displayio_protocol_t aurora_framebuffer_protocol = {
+    .deinit = aurora_protocol_deinit,
+    .is_moveable = aurora_protocol_is_moveable,
+    .start_vm = aurora_protocol_start_vm,
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    .stop_vm = aurora_protocol_stop_vm,
+    #endif
+};
+
 /* Protocol functions */
 
 static void aurora_epaper_framebuffer_deinit(mp_obj_t self_in) {
-    aurora_epaper_framebuffer_obj_t *self = self_in;
+    aurora_epaper_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_aurora_epaper_framebuffer_deinit(self);
 }
 
 static void aurora_epaper_framebuffer_get_bufinfo(mp_obj_t self_in, mp_buffer_info_t *bufinfo) {
-    aurora_epaper_framebuffer_obj_t *self = self_in;
+    aurora_epaper_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_aurora_epaper_framebuffer_get_bufinfo(self, bufinfo);
 }
 
@@ -564,17 +622,17 @@ static bool aurora_epaper_framebuffer_get_grayscale(mp_obj_t self_in) {
 }
 
 static int aurora_epaper_framebuffer_get_height(mp_obj_t self_in) {
-    aurora_epaper_framebuffer_obj_t *self = self_in;
+    aurora_epaper_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_aurora_epaper_framebuffer_get_height(self);
 }
 
 static int aurora_epaper_framebuffer_get_width(mp_obj_t self_in) {
-    aurora_epaper_framebuffer_obj_t *self = self_in;
+    aurora_epaper_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_aurora_epaper_framebuffer_get_width(self);
 }
 
 static void aurora_epaper_framebuffer_swapbuffers(mp_obj_t self_in, uint8_t *dirty_row_bitmask) {
-    aurora_epaper_framebuffer_obj_t *self = self_in;
+    aurora_epaper_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_aurora_epaper_framebuffer_swapbuffers(self, dirty_row_bitmask);
 }
 
@@ -583,17 +641,17 @@ static int aurora_epaper_framebuffer_get_first_pixel_offset(mp_obj_t self_in) {
 }
 
 static bool aurora_epaper_framebuffer_get_pixels_in_byte_share_row(mp_obj_t self_in) {
-    aurora_epaper_framebuffer_obj_t *self = self_in;
+    aurora_epaper_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_aurora_epaper_framebuffer_get_pixels_in_byte_share_row(self);
 }
 
 static bool aurora_epaper_framebuffer_get_reverse_pixels_in_byte(mp_obj_t self_in) {
-    aurora_epaper_framebuffer_obj_t *self = self_in;
+    aurora_epaper_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_aurora_epaper_framebuffer_get_reverse_pixels_in_byte(self);
 }
 
 static int aurora_epaper_framebuffer_get_row_stride(mp_obj_t self_in) {
-    aurora_epaper_framebuffer_obj_t *self = self_in;
+    aurora_epaper_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_aurora_epaper_framebuffer_get_row_stride(self);
 }
 
