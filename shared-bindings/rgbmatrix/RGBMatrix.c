@@ -229,6 +229,7 @@ static void *rgbmatrix_protocol_start_vm(void *self) {
     return rgbmatrix_rgbmatrix_start_vm(self);
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 static bool rgbmatrix_protocol_stop_vm(void *self_in) {
     rgbmatrix_rgbmatrix_obj_t *self = self_in;
     if (self->framebuffer != mp_const_none && gc_ptr_on_heap(MP_OBJ_TO_PTR(self->framebuffer))) {
@@ -238,11 +239,14 @@ static bool rgbmatrix_protocol_stop_vm(void *self_in) {
     }
     return mp_obj_get_type(MP_OBJ_FROM_PTR(self)) == &rgbmatrix_RGBMatrix_type;
 }
+#endif
 
 const displayio_protocol_t rgbmatrix_RGBMatrix_protocol = {
     .deinit = rgbmatrix_protocol_deinit,
     .start_vm = rgbmatrix_protocol_start_vm,
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
     .stop_vm = rgbmatrix_protocol_stop_vm,
+    #endif
 };
 
 static void check_for_deinit(rgbmatrix_rgbmatrix_obj_t *self) {

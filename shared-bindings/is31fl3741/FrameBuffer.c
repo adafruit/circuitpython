@@ -163,6 +163,7 @@ static bool is31fl3741_protocol_is_moveable(void *self_in) {
            common_hal_is31fl3741_IS31FL3741_is_moveable(self->is31fl3741);
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 static bool is31fl3741_protocol_stop_vm(void *self_in) {
     is31fl3741_framebuffer_obj_t *self = self_in;
     if (!is31fl3741_protocol_is_moveable(self)) {
@@ -191,12 +192,15 @@ static bool is31fl3741_protocol_stop_vm(void *self_in) {
     }
     return self->bufinfo.buf != NULL;
 }
+#endif
 
 const displayio_protocol_t is31fl3741_framebuffer_protocol = {
     .deinit = is31fl3741_protocol_deinit,
     .is_moveable = is31fl3741_protocol_is_moveable,
     .start_vm = is31fl3741_protocol_start_vm,
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
     .stop_vm = is31fl3741_protocol_stop_vm,
+    #endif
 };
 
 static void check_for_deinit(is31fl3741_framebuffer_obj_t *self) {

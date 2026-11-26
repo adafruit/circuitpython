@@ -571,6 +571,7 @@ static bool aurora_protocol_is_moveable(void *self_in) {
     return !gc_ptr_on_heap(self->bus) || common_hal_busio_spi_is_moveable(self->bus);
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 static bool aurora_protocol_stop_vm(void *self_in) {
     aurora_epaper_framebuffer_obj_t *self = self_in;
     if (!aurora_protocol_is_moveable(self)) {
@@ -589,12 +590,15 @@ static bool aurora_protocol_stop_vm(void *self_in) {
     }
     return true;
 }
+#endif
 
 const displayio_protocol_t aurora_framebuffer_protocol = {
     .deinit = aurora_protocol_deinit,
     .is_moveable = aurora_protocol_is_moveable,
     .start_vm = aurora_protocol_start_vm,
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
     .stop_vm = aurora_protocol_stop_vm,
+    #endif
 };
 
 /* Protocol functions */

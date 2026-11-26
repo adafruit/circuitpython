@@ -271,9 +271,9 @@ static busdisplay_busdisplay_obj_t *native_display(mp_obj_t display_obj) {
 //|         ...
 //|
 static mp_obj_t busdisplay_busdisplay_obj_deinit(mp_obj_t self_in) {
-    mp_obj_t proxy = mp_obj_cast_to_native_base(self_in, MP_OBJ_FROM_PTR(&busdisplay_busdisplay_type));
-    if (proxy != MP_OBJ_NULL) {
-        displayio_display_deinit(((displayio_proxy_t *)MP_OBJ_TO_PTR(proxy))->native);
+    mp_obj_t native = displayio_native_obj(self_in, &busdisplay_busdisplay_type);
+    if (native != MP_OBJ_NULL) {
+        displayio_display_deinit(native);
     }
     return mp_const_none;
 }
@@ -289,6 +289,7 @@ static void busdisplay_protocol_deinit(void *self) {
     release_busdisplay(self);
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 static void *busdisplay_protocol_start_vm(void *self) {
     return busdisplay_busdisplay_start_vm(self);
 }
@@ -306,6 +307,7 @@ static bool busdisplay_protocol_stop_vm(void *self_in) {
     reset_busdisplay(self);
     return true;
 }
+#endif
 
 #if !CIRCUITPY_DISPLAYIO_LVGL
 static void busdisplay_protocol_background(void *self) {
@@ -316,9 +318,11 @@ static void busdisplay_protocol_background(void *self) {
 
 const displayio_protocol_t busdisplay_busdisplay_protocol = {
     .deinit = busdisplay_protocol_deinit,
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
     .is_moveable = busdisplay_protocol_is_moveable,
     .start_vm = busdisplay_protocol_start_vm,
     .stop_vm = busdisplay_protocol_stop_vm,
+    #endif
     #if !CIRCUITPY_DISPLAYIO_LVGL
     .background = busdisplay_protocol_background,
     #else

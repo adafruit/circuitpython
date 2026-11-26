@@ -119,10 +119,17 @@ mp_obj_t picodvi_framebuffer_start_vm(picodvi_framebuffer_obj_t *self) {
 }
 
 static void set_audioout_vm_reference(picodvi_framebuffer_obj_t *self, size_t index, mp_obj_t value) {
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    // The framebuffer is itself a GC object, so these fields are already scanned.
+    (void)self;
+    (void)index;
+    (void)value;
+    #else
     if (self->bus_lifetime.proxy != MP_OBJ_NULL) {
         displayio_proxy_t *proxy = MP_OBJ_TO_PTR(self->bus_lifetime.proxy);
         mp_obj_list_store(MP_OBJ_FROM_PTR(proxy->vm), MP_OBJ_NEW_SMALL_INT(index), value);
     }
+    #endif
 }
 
 void picodvi_framebuffer_set_audioout(picodvi_framebuffer_obj_t *self, mp_obj_t audioout) {

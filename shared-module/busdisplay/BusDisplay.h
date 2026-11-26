@@ -30,7 +30,7 @@ typedef struct {
     busdisplay_backlight_native_t native;
     mp_obj_t object;
     busdisplay_backlight_kind_t kind;
-    #if CIRCUITPY_FULL_BUILD
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
     size_t size;
     #endif
     bool owns;
@@ -42,9 +42,11 @@ void busdisplay_backlight_validate(mp_obj_t backlight);
 #endif
 void busdisplay_backlight_construct(busdisplay_backlight_t *self, mp_obj_t backlight,
     uint16_t pwm_frequency);
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 bool busdisplay_backlight_is_moveable(busdisplay_backlight_t *self);
 void busdisplay_backlight_adopt(busdisplay_backlight_t *self);
 mp_obj_t busdisplay_backlight_start_vm(busdisplay_backlight_t *self);
+#endif
 bool busdisplay_backlight_set(busdisplay_backlight_t *self, mp_float_t brightness);
 void busdisplay_backlight_deinit(busdisplay_backlight_t *self);
 

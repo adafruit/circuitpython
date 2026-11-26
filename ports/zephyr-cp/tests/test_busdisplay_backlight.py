@@ -80,6 +80,7 @@ if run == 0:
     backlight.switch_to_output(False)
     primary = busdisplay.BusDisplay(bus, b'', width=64, height=64,
         backlight=backlight, auto_refresh=False)
+    supervisor.runtime.display = primary
     print('backlight reload first')
 else:
     primary = supervisor.runtime.display
@@ -123,6 +124,7 @@ if run == 0:
     pwm = pwmio.PWMOut(pin.P_05, frequency=1000, duty_cycle=0)
     primary = busdisplay.BusDisplay(bus, b'', width=64, height=64,
         backlight=pwm, brightness=0.5, auto_refresh=False)
+    supervisor.runtime.display = primary
     assert abs(pwm.duty_cycle - 0x7fff) <= 1
     assert primary.backlight is pwm
     # The display proxy roots the borrowed PWM until the primary adopts it.

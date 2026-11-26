@@ -29,7 +29,7 @@ bus = fourwire.FourWire(board.SPI(), command=pin.P_10, chip_select=pin.P_11, res
 displays = [busdisplay.BusDisplay(bus, b'', width=64, height=64, auto_refresh=False)
     for _ in range(4)]
 assert all(display.bus is bus for display in displays)
-assert supervisor.runtime.display is displays[0]
+assert supervisor.runtime.display is None
 assert all(type(display) is busdisplay.BusDisplay for display in displays)
 
 # Repeatedly drop secondary references. LVGL draw buffers make a finalization
@@ -99,6 +99,7 @@ displayio.release_displays()
 bus = fourwire.FourWire(board.SPI(), command=pin.P_10, chip_select=pin.P_11)
 primary = busdisplay.BusDisplay(bus, b'', width=64, height=64, auto_refresh=False)
 secondary = busdisplay.BusDisplay(bus, b'', width=64, height=64, auto_refresh=False)
+supervisor.runtime.display = primary
 assert supervisor.runtime.display is primary
 
 displayio.release_displays()
@@ -168,6 +169,7 @@ if run == 0:
     bus = fourwire.FourWire(board.SPI(), command=pin.P_10, chip_select=pin.P_11)
     primary = busdisplay.BusDisplay(bus, b'', width=64, height=64, auto_refresh=False)
     secondary = busdisplay.BusDisplay(bus, b'', width=64, height=64, auto_refresh=False)
+    supervisor.runtime.display = primary
     assert supervisor.runtime.display is primary
     assert secondary.bus is bus
     print('reload first')
@@ -209,8 +211,9 @@ with open('display-run.txt', 'w') as f:
 builtin = board.DISPLAY
 assert builtin is not None
 if run == 0:
+    supervisor.runtime.display = builtin
     runtime = supervisor.runtime.display
-    assert runtime is not None
+    assert runtime is builtin
     assert runtime.width == builtin.width
     builtin.root_group = displayio.Group()
     bus = fourwire.FourWire(board.SPI(), command=pin.P_10, chip_select=pin.P_11)
@@ -250,6 +253,7 @@ import busdisplay
 import displayio
 import epaperdisplay
 import fourwire
+import supervisor
 import time
 from microcontroller import pin
 
@@ -259,6 +263,7 @@ primary = busdisplay.BusDisplay(bus, b'', width=64, height=64, auto_refresh=Fals
 secondary = epaperdisplay.EPaperDisplay(bus, b'', b'', width=16, height=16,
     ram_width=16, ram_height=16, write_black_ram_command=0x24,
     refresh_display_command=0x20, refresh_time=0.01, seconds_per_frame=0)
+supervisor.runtime.display = primary
 assert secondary.bus is bus
 secondary.root_group = displayio.Group()
 secondary.refresh()
@@ -296,6 +301,7 @@ for _ in range(16):
     assert supervisor.runtime.display is None
     gc.collect()
 display = busdisplay.BusDisplay(bus, b'', width=64, height=64, auto_refresh=False)
+supervisor.runtime.display = display
 assert supervisor.runtime.display is display
 assert display.bus is bus
 print('failed construction left bus usable')
@@ -328,6 +334,7 @@ if run == 0:
     bus = fourwire.FourWire(spi, command=pin.P_10, chip_select=pin.P_11)
     primary = busdisplay.BusDisplay(bus, b'', width=64, height=64, auto_refresh=False)
     secondary = busdisplay.BusDisplay(bus, b'', width=64, height=64, auto_refresh=False)
+    supervisor.runtime.display = primary
     assert supervisor.runtime.display is primary
 
     assert spi.try_lock()

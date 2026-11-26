@@ -451,8 +451,10 @@ void reset_busdisplay(busdisplay_busdisplay_obj_t *self) {
     displayio_lvgl_unlock_with_cleanup();
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 busdisplay_busdisplay_vm_t *busdisplay_busdisplay_start_vm(busdisplay_busdisplay_obj_t *self) {
     busdisplay_busdisplay_vm_t *vm = m_new_obj(busdisplay_busdisplay_vm_t);
     vm->backlight = busdisplay_backlight_start_vm(&self->backlight);
     return vm;
 }
+#endif

@@ -36,7 +36,11 @@ void displayio_display_background_noop(void *self);
 
 typedef struct {
     mp_obj_t next;
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    bool deinited;
+    #else
     mp_obj_t proxy;
+    #endif
     const displayio_protocol_t *protocol;
     bool static_allocation;
 } displayio_native_link_t;
@@ -44,11 +48,17 @@ typedef struct {
 typedef struct {
     displayio_native_link_t native;
     mp_obj_t bus;
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    // VM-created displays are GC objects, so the group reference is scanned
+    // directly. Board displays are static and have it rooted explicitly.
+    mp_obj_t root_group;
+    #endif
     bool board;
 } displayio_display_link_t;
 
 typedef displayio_native_link_t displayio_bus_lifetime_t;
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 // Python sees one shared, same-type proxy for every display and bus. native is
 // MP_OBJ_NULL after release, making finalization and deinitialization
 // idempotent. root_group keeps a user-assigned Group alive for this VM only.
@@ -61,6 +71,7 @@ typedef struct {
     mp_obj_t root_group;
     void *vm;
 } displayio_proxy_t;
+#endif
 
 // Prepare a native object and its lifetime link. If native is NULL, allocate
 // size bytes from the port heap. Displays pass their bus; buses pass
@@ -76,6 +87,9 @@ void displayio_stop_vm(void);
 // Shared proxy conversion and lazy proxy creation. Public bindings unwrap with
 // the expected native type; native code uses the typed pointers directly.
 void *displayio_proxy_native(mp_obj_t obj, const mp_obj_type_t *type);
+// Like displayio_proxy_native() but returns MP_OBJ_NULL when the object has
+// been deinitialized. Works with both lifetime implementations.
+mp_obj_t displayio_native_obj(mp_obj_t obj, const mp_obj_type_t *type);
 mp_obj_t displayio_bus_native(mp_obj_t obj);
 mp_obj_t displayio_display_proxy(mp_obj_t native);
 mp_obj_t displayio_bus_proxy(mp_obj_t native);
@@ -85,10 +99,10 @@ void displayio_display_set_root_group_reference(mp_obj_t native, mp_obj_t root_g
 // e-paper preparation; proxy finalizers use the non-raising variant.
 void displayio_display_deinit(mp_obj_t native);
 void displayio_construct_failed(mp_obj_t native);
-void displayio_display_proxy_finalise(displayio_proxy_t *proxy);
+void displayio_display_proxy_finalise(void *obj);
 void displayio_bus_deinit(mp_obj_t native_bus);
 void displayio_bus_deinit_obj(mp_obj_t obj, const mp_obj_type_t *type);
-void displayio_bus_proxy_finalise(displayio_proxy_t *proxy);
+void displayio_bus_proxy_finalise(void *obj);
 
 bool displayio_is_primary_display(const void *native);
 mp_obj_t displayio_primary_display_native(void);

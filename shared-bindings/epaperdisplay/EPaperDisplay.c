@@ -379,9 +379,9 @@ static epaperdisplay_epaperdisplay_obj_t *native_display(mp_obj_t display_obj) {
 //|         ...
 //|
 static mp_obj_t epaperdisplay_epaperdisplay_obj_deinit(mp_obj_t self_in) {
-    mp_obj_t proxy = mp_obj_cast_to_native_base(self_in, MP_OBJ_FROM_PTR(&epaperdisplay_epaperdisplay_type));
-    if (proxy != MP_OBJ_NULL) {
-        displayio_display_deinit(((displayio_proxy_t *)MP_OBJ_TO_PTR(proxy))->native);
+    mp_obj_t native = displayio_native_obj(self_in, &epaperdisplay_epaperdisplay_type);
+    if (native != MP_OBJ_NULL) {
+        displayio_display_deinit(native);
     }
     return mp_const_none;
 }

@@ -426,6 +426,11 @@ typedef long mp_off_t;
 // So if any are not defined in *.mk, they'll throw an error here.
 
 #if CIRCUITPY_DISPLAYIO
+// Normally set from CIRCUITPY_DISPLAY_LIFETIME_SIMPLE in the .mk files.
+#ifndef CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+#define CIRCUITPY_DISPLAY_LIFETIME_SIMPLE (0)
+#endif
+
 // Normally set from CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE in the .mk files.
 #ifndef CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE
 #define CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE (512)

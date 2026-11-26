@@ -23,7 +23,9 @@ static mp_obj_t buses;
 static mp_obj_t primary_display;
 static mp_obj_t primary_display_identity;
 static bool primary_display_set_by_user;
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 static bool vm_active;
+#endif
 static bool keep_registry_alive;
 
 // A driver may run background tasks or collect while waiting for hardware.
@@ -86,7 +88,13 @@ static bool list_contains(mp_obj_t head, mp_obj_t native) {
 }
 
 static bool display_survives(mp_obj_t native) {
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    // Simple lifetime has no board displays; everything is released by GC.
+    (void)native;
+    return false;
+    #else
     return native == primary_display || display_link(native)->board;
+    #endif
 }
 
 static bool protocol_is_bus(const displayio_protocol_t *protocol) {
@@ -110,10 +118,21 @@ void *displayio_native_init(void *native, const displayio_protocol_t *protocol,
     const mp_obj_type_t *type, size_t size, mp_obj_t bus, bool board) {
     bool static_allocation = native != NULL;
     if (native == NULL) {
+        #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+        // These objects are ordinary GC objects and are released by their
+        // finalizers or explicitly with deinit().
+        #if MICROPY_ENABLE_FINALISER
+        native = m_malloc_with_finaliser(size);
+        #else
+        native = m_malloc(size);
+        #endif
+        memset(native, 0, size);
+        #else
         native = port_malloc_zero(size, false);
         if (native == NULL) {
             mp_raise_msg(&mp_type_MemoryError, NULL);
         }
+        #endif
     }
     mp_obj_t object = MP_OBJ_FROM_PTR(native);
     ((mp_obj_base_t *)native)->type = type;
@@ -130,9 +149,13 @@ void *displayio_native_init(void *native, const displayio_protocol_t *protocol,
     displayio_display_link_t *display = display_link(object);
     display->bus = bus;
     display->board = board;
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    display->root_group = MP_OBJ_NULL;
+    #endif
     return native;
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 static bool native_is_moveable(mp_obj_t native) {
     const displayio_protocol_t *protocol = native_link(native)->protocol;
     return protocol->is_moveable == NULL || protocol->is_moveable(MP_OBJ_TO_PTR(native));
@@ -146,31 +169,41 @@ static bool display_is_moveable(mp_obj_t native) {
     return bus == MP_OBJ_NULL || native_is_moveable(bus);
 }
 
+#endif
+
 static void register_display(mp_obj_t native) {
-    if (primary_display == MP_OBJ_NULL && !display_is_moveable(native)) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Display resources cannot move between VMs"));
-    }
     list_append(&displays, native);
-    if (primary_display == MP_OBJ_NULL) {
-        primary_display = native;
-    }
 }
 
 mp_obj_t displayio_register(mp_obj_t native) {
     if (protocol_is_bus(native_link(native)->protocol)) {
+        #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+        if (!list_contains(buses, native)) {
+            list_append(&buses, native);
+        }
+        return native;
+        #else
         if (list_contains(buses, native)) {
             return displayio_bus_proxy(native);
         }
         mp_obj_t proxy = displayio_bus_proxy(native);
         list_append(&buses, native);
         return proxy;
+        #endif
     }
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    if (!list_contains(displays, native)) {
+        register_display(native);
+    }
+    return native;
+    #else
     if (list_contains(displays, native)) {
         return displayio_display_proxy(native);
     }
     mp_obj_t proxy = displayio_display_proxy(native);
     register_display(native);
     return proxy;
+    #endif
 }
 
 void *displayio_proxy_native(mp_obj_t obj, const mp_obj_type_t *type) {
@@ -178,6 +211,12 @@ void *displayio_proxy_native(mp_obj_t obj, const mp_obj_type_t *type) {
     if (base == MP_OBJ_NULL) {
         mp_raise_TypeError_varg(MP_ERROR_TEXT("expected %q"), type->name);
     }
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    if (mp_obj_get_type(base) != type || native_link(base)->deinited) {
+        raise_deinited_error();
+    }
+    return MP_OBJ_TO_PTR(base);
+    #else
     displayio_proxy_t *proxy = MP_OBJ_TO_PTR(base);
     if (!gc_ptr_on_heap(proxy)) {
         // Board dictionaries may expose their statically allocated native
@@ -188,16 +227,39 @@ void *displayio_proxy_native(mp_obj_t obj, const mp_obj_type_t *type) {
         raise_deinited_error();
     }
     return MP_OBJ_TO_PTR(proxy->native);
+    #endif
+}
+
+mp_obj_t displayio_native_obj(mp_obj_t obj, const mp_obj_type_t *type) {
+    mp_obj_t base = mp_obj_cast_to_native_base(obj, MP_OBJ_FROM_PTR(type));
+    if (base == MP_OBJ_NULL) {
+        return MP_OBJ_NULL;
+    }
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    return mp_obj_get_type(base) == type && !native_link(base)->deinited ? base : MP_OBJ_NULL;
+    #else
+    displayio_proxy_t *proxy = MP_OBJ_TO_PTR(base);
+    if (!gc_ptr_on_heap(proxy)) {
+        return base;
+    }
+    return proxy->native;
+    #endif
 }
 
 static mp_obj_t find_bus(mp_obj_t head, mp_obj_t obj) {
     for (mp_obj_t native = head; native != MP_OBJ_NULL; native = native_link(native)->next) {
         const mp_obj_type_t *type = mp_obj_get_type(native);
         mp_obj_t cast = mp_obj_cast_to_native_base(obj, MP_OBJ_FROM_PTR(type));
+        #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+        if (cast == native) {
+            return native;
+        }
+        #else
         if (cast != MP_OBJ_NULL &&
             (cast == native || cast == native_link(native)->proxy)) {
             return native;
         }
+        #endif
     }
     return MP_OBJ_NULL;
 }
@@ -209,6 +271,7 @@ mp_obj_t displayio_bus_native(mp_obj_t obj) {
     return find_bus(buses, obj);
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 static mp_obj_t get_proxy(mp_obj_t native, mp_obj_t owner) {
     displayio_native_link_t *link = native_link(native);
     if (link->proxy != MP_OBJ_NULL || !vm_active) {
@@ -239,8 +302,18 @@ mp_obj_t displayio_display_proxy(mp_obj_t native) {
     }
     return get_proxy(native, displayio_bus_proxy(display_link(native)->bus));
 }
+#else
+mp_obj_t displayio_bus_proxy(mp_obj_t native) {
+    return native == MP_OBJ_NULL ? mp_const_none : native;
+}
+
+mp_obj_t displayio_display_proxy(mp_obj_t native) {
+    return native == MP_OBJ_NULL ? mp_const_none : native;
+}
+#endif
 
 void displayio_start_vm(void) {
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
     // Materialize every surviving display so directly exposed static board
     // objects also have VM storage for their root groups and dependencies.
     vm_active = true;
@@ -249,21 +322,22 @@ void displayio_start_vm(void) {
             displayio_display_proxy(native);
         }
     }
+    #endif
 }
 
 void displayio_display_set_root_group_reference(mp_obj_t native, mp_obj_t root_group) {
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    display_link(native)->root_group = root_group;
+    #else
     displayio_native_link_t *link = native_link(native);
     if (link->proxy != MP_OBJ_NULL) {
         ((displayio_proxy_t *)MP_OBJ_TO_PTR(link->proxy))->root_group = root_group;
     }
+    #endif
 }
 
 bool displayio_is_primary_display(const void *native) {
-    mp_obj_t display = MP_OBJ_FROM_PTR(native);
-    // During construction, size the terminal for the prospective primary,
-    // but don't publish it until construction succeeds.
-    return primary_display == display ||
-           (primary_display == MP_OBJ_NULL && !list_contains(displays, display));
+    return primary_display == MP_OBJ_FROM_PTR(native);
 }
 
 mp_obj_t displayio_primary_display_native(void) {
@@ -287,6 +361,7 @@ mp_obj_t displayio_board_display_native(void) {
     return MP_OBJ_NULL;
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 static void invalidate_proxy(mp_obj_t native) {
     displayio_native_link_t *link = native_link(native);
     if (link->proxy != MP_OBJ_NULL) {
@@ -299,8 +374,19 @@ static void invalidate_proxy(mp_obj_t native) {
     }
 }
 
+#endif
+
 static void deinit_native(mp_obj_t native) {
     displayio_native_link_t *link = native_link(native);
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    if (link->deinited) {
+        return;
+    }
+    link->protocol->deinit(MP_OBJ_TO_PTR(native));
+    // Mark it deinitialized so the finalizer and explicit deinit() are no-ops.
+    // The GC owns the memory and the type stays intact for idempotent deinit().
+    link->deinited = true;
+    #else
     link->protocol->deinit(MP_OBJ_TO_PTR(native));
     invalidate_proxy(native);
     if (link->static_allocation) {
@@ -308,15 +394,21 @@ static void deinit_native(mp_obj_t native) {
     } else {
         port_free(MP_OBJ_TO_PTR(native));
     }
+    #endif
 }
 
 static void bus_deinit(mp_obj_t bus);
 
 static void display_deinit(mp_obj_t native, bool release_empty_bus) {
     mp_obj_t bus = display_link(native)->bus;
-    // Keep the display proxy and its dependencies marked if release runs GC.
+    // Keep the display and its dependencies marked if release runs GC.
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    volatile mp_obj_t display = native;
+    (void)display;
+    #else
     volatile mp_obj_t proxy = native_link(native)->proxy;
     (void)proxy;
+    #endif
     list_remove(&displays, native);
     if (native == primary_display) {
         primary_display = MP_OBJ_NULL;
@@ -342,8 +434,13 @@ void displayio_construct_failed(mp_obj_t native) {
 }
 
 static void bus_deinit(mp_obj_t bus) {
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    volatile mp_obj_t bus_obj = bus;
+    (void)bus_obj;
+    #else
     volatile mp_obj_t proxy = native_link(bus)->proxy;
     (void)proxy;
+    #endif
     for (mp_obj_t *cursor = &displays; *cursor != MP_OBJ_NULL;) {
         mp_obj_t native = *cursor;
         if (display_link(native)->bus == bus) {
@@ -366,7 +463,17 @@ void displayio_bus_deinit(mp_obj_t native) {
     nlr_pop_jump_callback(true);
 }
 
-void displayio_display_proxy_finalise(displayio_proxy_t *proxy) {
+void displayio_display_proxy_finalise(void *obj) {
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    mp_obj_t native = MP_OBJ_FROM_PTR(obj);
+    if (native_link(native)->deinited) {
+        return;
+    }
+    // Deinit may wait, but it must not raise. Release the bus too when this is
+    // its last display so display teardown always precedes bus teardown.
+    display_deinit(native, true);
+    #else
+    displayio_proxy_t *proxy = obj;
     if (proxy->native == MP_OBJ_NULL) {
         return;
     }
@@ -382,19 +489,27 @@ void displayio_display_proxy_finalise(displayio_proxy_t *proxy) {
         // Deinit may wait, but it must not raise.
         display_deinit(proxy->native, false);
     }
+    #endif
 }
 
-void displayio_bus_proxy_finalise(displayio_proxy_t *proxy) {
+void displayio_bus_proxy_finalise(void *obj) {
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    mp_obj_t native = MP_OBJ_FROM_PTR(obj);
+    if (!native_link(native)->deinited && !bus_has_display(native, false)) {
+        bus_deinit(native);
+    }
+    #else
+    displayio_proxy_t *proxy = obj;
     if (proxy->native != MP_OBJ_NULL && !bus_has_display(proxy->native, false)) {
         bus_deinit(proxy->native);
     }
+    #endif
 }
 
 void displayio_bus_deinit_obj(mp_obj_t obj, const mp_obj_type_t *type) {
-    mp_obj_t base = mp_obj_cast_to_native_base(obj, MP_OBJ_FROM_PTR(type));
-    if (base != MP_OBJ_NULL) {
-        displayio_proxy_t *proxy = MP_OBJ_TO_PTR(base);
-        displayio_bus_deinit(proxy->native);
+    mp_obj_t native = displayio_native_obj(obj, type);
+    if (native != MP_OBJ_NULL) {
+        displayio_bus_deinit(native);
     }
 }
 
@@ -414,6 +529,12 @@ void common_hal_displayio_release_displays(void) {
     nlr_pop_jump_callback(true);
 }
 
+#if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+void displayio_stop_vm(void) {
+    // Simple-lifetime displays are GC objects. Their finalizers release the
+    // hardware when the VM heap is torn down.
+}
+#else
 static bool stop_vm_native(mp_obj_t native) {
     const displayio_protocol_t *protocol = native_link(native)->protocol;
     return protocol->stop_vm == NULL || protocol->stop_vm(MP_OBJ_TO_PTR(native));
@@ -466,8 +587,27 @@ void displayio_stop_vm(void) {
     vm_active = false;
     nlr_pop_jump_callback(true);
 }
+#endif
 
 void displayio_gc_collect_primary_and_board(void) {
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    gc_collect_root(&primary_display_identity, 1);
+    gc_collect_root(&primary_display, 1);
+    if (keep_registry_alive) {
+        gc_collect_root(&displays, 1);
+        gc_collect_root(&buses, 1);
+    }
+    for (mp_obj_t native = displays; native != MP_OBJ_NULL; native = native_link(native)->next) {
+        if (keep_registry_alive) {
+            gc_collect_root(&native_link(native)->next, 1);
+        }
+    }
+    if (keep_registry_alive) {
+        for (mp_obj_t bus = buses; bus != MP_OBJ_NULL; bus = native_link(bus)->next) {
+            gc_collect_root(&native_link(bus)->next, 1);
+        }
+    }
+    #else
     gc_collect_root(&primary_display_identity, 1);
     for (mp_obj_t native = displays; native != MP_OBJ_NULL; native = native_link(native)->next) {
         if (keep_registry_alive || display_survives(native)) {
@@ -485,6 +625,7 @@ void displayio_gc_collect_primary_and_board(void) {
             gc_collect_root(&native_link(bus)->proxy, 1);
         }
     }
+    #endif
 }
 
 #if !CIRCUITPY_DISPLAYIO_LVGL
@@ -500,13 +641,8 @@ mp_obj_t common_hal_displayio_get_primary_display(void) {
 
 static mp_obj_t find_display(mp_obj_t obj) {
     for (mp_obj_t native = displays; native != MP_OBJ_NULL; native = native_link(native)->next) {
-        mp_obj_t proxy = native_link(native)->proxy;
-        if (obj == native || obj == proxy) {
-            return native;
-        }
         const mp_obj_type_t *type = mp_obj_get_type(native);
-        mp_obj_t cast = mp_obj_cast_to_native_base(obj, MP_OBJ_FROM_PTR(type));
-        if (cast != MP_OBJ_NULL && (cast == native || cast == proxy)) {
+        if (displayio_native_obj(obj, type) == native) {
             return native;
         }
     }
@@ -522,9 +658,11 @@ void common_hal_displayio_set_primary_display(mp_obj_t new_primary) {
     }
     mp_obj_t native = find_display(new_primary);
     if (native != MP_OBJ_NULL) {
+        #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
         if (!display_is_moveable(native)) {
             mp_raise_ValueError(MP_ERROR_TEXT("Display resources cannot move between VMs"));
         }
+        #endif
         primary_display = native;
         primary_display_identity = new_primary;
         primary_display_set_by_user = true;
@@ -546,8 +684,13 @@ void displayio_background(void) {
         const displayio_protocol_t *protocol = link->protocol;
         if (protocol->background != NULL) {
             // A background driver may collect; pin this node until it returns.
+            #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+            volatile mp_obj_t display = native;
+            (void)display;
+            #else
             volatile mp_obj_t proxy = link->proxy;
             (void)proxy;
+            #endif
             protocol->background(MP_OBJ_TO_PTR(native));
         }
     }

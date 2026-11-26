@@ -116,9 +116,9 @@ static framebufferio_framebufferdisplay_obj_t *native_display(mp_obj_t display_o
 //|         ...
 //|
 static mp_obj_t framebufferio_framebufferdisplay_obj_deinit(mp_obj_t self_in) {
-    mp_obj_t proxy = mp_obj_cast_to_native_base(self_in, MP_OBJ_FROM_PTR(&framebufferio_framebufferdisplay_type));
-    if (proxy != MP_OBJ_NULL) {
-        displayio_display_deinit(((displayio_proxy_t *)MP_OBJ_TO_PTR(proxy))->native);
+    mp_obj_t native = displayio_native_obj(self_in, &framebufferio_framebufferdisplay_type);
+    if (native != MP_OBJ_NULL) {
+        displayio_display_deinit(native);
     }
     return mp_const_none;
 }
@@ -143,6 +143,7 @@ static void *framebuffer_protocol_start_vm(void *self) {
     return framebufferio_framebufferdisplay_start_vm(self);
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 static bool framebuffer_protocol_stop_vm(void *self_in) {
     framebufferio_framebufferdisplay_obj_t *self = self_in;
     if (self->link.bus == MP_OBJ_NULL && gc_ptr_on_heap(MP_OBJ_TO_PTR(self->framebuffer))) {
@@ -151,6 +152,7 @@ static bool framebuffer_protocol_stop_vm(void *self_in) {
     framebufferio_framebufferdisplay_reset(self);
     return true;
 }
+#endif
 
 #if !CIRCUITPY_DISPLAYIO_LVGL
 static void framebuffer_protocol_background(void *self) {
@@ -162,7 +164,9 @@ static void framebuffer_protocol_background(void *self) {
 const displayio_protocol_t framebufferio_framebufferdisplay_protocol = {
     .deinit = framebuffer_protocol_deinit,
     .start_vm = framebuffer_protocol_start_vm,
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
     .stop_vm = framebuffer_protocol_stop_vm,
+    #endif
     #if !CIRCUITPY_DISPLAYIO_LVGL
     .background = framebuffer_protocol_background,
     #else

@@ -92,9 +92,9 @@ static zephyr_display_display_obj_t *native_display(mp_obj_t display_obj) {
 //|         ...
 //|
 static mp_obj_t zephyr_display_display_obj_deinit(mp_obj_t self_in) {
-    mp_obj_t proxy = mp_obj_cast_to_native_base(self_in, MP_OBJ_FROM_PTR(&zephyr_display_display_type));
-    if (proxy != MP_OBJ_NULL) {
-        displayio_display_deinit(((displayio_proxy_t *)MP_OBJ_TO_PTR(proxy))->native);
+    mp_obj_t native = displayio_native_obj(self_in, &zephyr_display_display_type);
+    if (native != MP_OBJ_NULL) {
+        displayio_display_deinit(native);
     }
     return mp_const_none;
 }
@@ -114,10 +114,12 @@ static void *zephyr_protocol_start_vm(void *self) {
     return zephyr_display_display_start_vm(self);
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 static bool zephyr_protocol_stop_vm(void *self) {
     zephyr_display_display_reset(self);
     return true;
 }
+#endif
 
 
 #if !CIRCUITPY_DISPLAYIO_LVGL
@@ -129,7 +131,9 @@ static void zephyr_protocol_background(void *self) {
 const displayio_protocol_t zephyr_display_display_protocol = {
     .deinit = zephyr_protocol_deinit,
     .start_vm = zephyr_protocol_start_vm,
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
     .stop_vm = zephyr_protocol_stop_vm,
+    #endif
     #if !CIRCUITPY_DISPLAYIO_LVGL
     .background = zephyr_protocol_background,
     #else

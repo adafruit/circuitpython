@@ -280,13 +280,17 @@ static bool sharpdisplay_protocol_is_moveable(void *self_in) {
     return !gc_ptr_on_heap(self->bus) || common_hal_busio_spi_is_moveable(self->bus);
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 static bool sharpdisplay_protocol_stop_vm(void *self) {
     return common_hal_sharpdisplay_framebuffer_stop_vm(self);
 }
+#endif
 
 const displayio_protocol_t sharpdisplay_framebuffer_protocol = {
     .deinit = sharpdisplay_protocol_deinit,
     .is_moveable = sharpdisplay_protocol_is_moveable,
     .start_vm = sharpdisplay_protocol_start_vm,
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
     .stop_vm = sharpdisplay_protocol_stop_vm,
+    #endif
 };

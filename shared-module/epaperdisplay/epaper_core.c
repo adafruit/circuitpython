@@ -31,12 +31,18 @@
 #if CIRCUITPY_EPAPERDISPLAY_FAST
 // The proxy's VM state holds the held exception so the GC keeps it alive.
 static epaperdisplay_epaperdisplay_vm_t *vm_state(epaperdisplay_epaper_core_t *self) {
+    #if CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
+    // The display is itself a GC object; lag.held_exception is already scanned.
+    (void)self;
+    return NULL;
+    #else
     epaperdisplay_epaperdisplay_obj_t *display = self->display;
     if (display == NULL || display->link.native.proxy == MP_OBJ_NULL) {
         return NULL;
     }
     displayio_proxy_t *proxy = MP_OBJ_TO_PTR(display->link.native.proxy);
     return proxy->vm;
+    #endif
 }
 
 void epaperdisplay_epaper_core_set_held_exception(epaperdisplay_epaper_core_t *self, mp_obj_t exception) {

@@ -35,6 +35,7 @@ size_t maybe_refresh_epaperdisplay(void) {
     return 0;
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 epaperdisplay_epaperdisplay_vm_t *epaperdisplay_epaperdisplay_start_vm(epaperdisplay_epaperdisplay_obj_t *self) {
     epaperdisplay_epaperdisplay_vm_t *vm = m_new_obj(epaperdisplay_epaperdisplay_vm_t);
     #if CIRCUITPY_EPAPERDISPLAY_FAST
@@ -42,6 +43,7 @@ epaperdisplay_epaperdisplay_vm_t *epaperdisplay_epaperdisplay_start_vm(epaperdis
     #endif
     return vm;
 }
+#endif
 
 static void epaper_protocol_deinit(void *self) {
     #if CIRCUITPY_EPAPERDISPLAY_FAST
@@ -51,14 +53,17 @@ static void epaper_protocol_deinit(void *self) {
     release_epaperdisplay(self);
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 static void *epaper_protocol_start_vm(void *self) {
     return epaperdisplay_epaperdisplay_start_vm(self);
 }
+#endif
 
 static void epaper_protocol_background(void *self) {
     epaperdisplay_epaperdisplay_background(self);
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 static bool epaper_protocol_stop_vm(void *self_in) {
     epaperdisplay_epaperdisplay_obj_t *self = self_in;
     #if CIRCUITPY_EPAPERDISPLAY_FAST
@@ -71,10 +76,13 @@ static bool epaper_protocol_stop_vm(void *self_in) {
     epaperdisplay_epaperdisplay_reset(self);
     return true;
 }
+#endif
 
 const displayio_protocol_t epaperdisplay_epaperdisplay_protocol = {
     .deinit = epaper_protocol_deinit,
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
     .start_vm = epaper_protocol_start_vm,
     .stop_vm = epaper_protocol_stop_vm,
+    #endif
     .background = epaper_protocol_background,
 };

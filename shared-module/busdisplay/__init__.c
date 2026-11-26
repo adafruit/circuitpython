@@ -40,7 +40,7 @@ void busdisplay_backlight_construct(busdisplay_backlight_t *self, mp_obj_t backl
     self->kind = BUSDISPLAY_BACKLIGHT_NONE;
     self->owns = false;
     self->adopted = false;
-    #if CIRCUITPY_FULL_BUILD
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
     self->size = 0;
     #endif
     if (backlight == NULL || backlight == mp_const_none) {
@@ -50,7 +50,7 @@ void busdisplay_backlight_construct(busdisplay_backlight_t *self, mp_obj_t backl
     if (mp_obj_is_type(backlight, &digitalio_digitalinout_type)) {
         self->object = backlight;
         self->kind = BUSDISPLAY_BACKLIGHT_DIGITAL;
-        #if CIRCUITPY_FULL_BUILD
+        #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
         self->size = sizeof(digitalio_digitalinout_obj_t);
         #endif
         return;
@@ -59,7 +59,7 @@ void busdisplay_backlight_construct(busdisplay_backlight_t *self, mp_obj_t backl
     if (mp_obj_is_type(backlight, &pwmio_pwmout_type)) {
         self->object = backlight;
         self->kind = BUSDISPLAY_BACKLIGHT_PWM;
-        #if CIRCUITPY_FULL_BUILD
+        #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
         self->size = sizeof(pwmio_pwmout_obj_t);
         #endif
         return;
@@ -88,6 +88,9 @@ void busdisplay_backlight_construct(busdisplay_backlight_t *self, mp_obj_t backl
     }
 }
 
+static void deinit_backlight(busdisplay_backlight_kind_t kind, mp_obj_t object);
+
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 bool busdisplay_backlight_is_moveable(busdisplay_backlight_t *self) {
     #if CIRCUITPY_FULL_BUILD
     bool has_object = self->object != NULL && self->object != mp_const_none;
@@ -109,8 +112,6 @@ bool busdisplay_backlight_is_moveable(busdisplay_backlight_t *self) {
     #endif
     return true;
 }
-
-static void deinit_backlight(busdisplay_backlight_kind_t kind, mp_obj_t object);
 
 void busdisplay_backlight_adopt(busdisplay_backlight_t *self) {
     #if CIRCUITPY_FULL_BUILD
@@ -185,6 +186,7 @@ mp_obj_t busdisplay_backlight_start_vm(busdisplay_backlight_t *self) {
     #endif
     return self->object;
 }
+#endif
 
 bool busdisplay_backlight_set(busdisplay_backlight_t *self, mp_float_t brightness) {
     mp_obj_t object = self->object;
@@ -224,7 +226,7 @@ void busdisplay_backlight_deinit(busdisplay_backlight_t *self) {
     self->kind = BUSDISPLAY_BACKLIGHT_NONE;
     self->owns = false;
     self->adopted = false;
-    #if CIRCUITPY_FULL_BUILD
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
     self->size = 0;
     #endif
 }

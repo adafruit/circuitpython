@@ -224,6 +224,9 @@ MP_PROPERTY_GETSET(supervisor_runtime_rgb_status_brightness_obj,
 //|
 //|     If no display is configured, this property is `None`.
 //|
+//|     On small builds that do not keep user-created displays across runs, this
+//|     property is read-only and only reports a display created by the board.
+//|
 //|     Any display that is not the primary display is automatically released at the end of
 //|     running a code file.
 //|

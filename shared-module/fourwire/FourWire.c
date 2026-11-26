@@ -72,6 +72,7 @@ static void fourwire_protocol_deinit(void *self) {
     common_hal_fourwire_fourwire_deinit(self);
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 static void *fourwire_protocol_start_vm(void *self) {
     return fourwire_fourwire_start_vm(self);
 }
@@ -104,12 +105,15 @@ static bool fourwire_protocol_stop_vm(void *self_in) {
     }
     return true;
 }
+#endif
 
 const displayio_protocol_t fourwire_fourwire_protocol = {
     .deinit = fourwire_protocol_deinit,
+    #if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
     .is_moveable = fourwire_protocol_is_moveable,
     .start_vm = fourwire_protocol_start_vm,
     .stop_vm = fourwire_protocol_stop_vm,
+    #endif
 };
 
 bool common_hal_fourwire_fourwire_reset(mp_obj_t obj) {
@@ -249,6 +253,7 @@ void common_hal_fourwire_fourwire_end_transaction(mp_obj_t obj) {
     common_hal_busio_spi_unlock(self->bus);
 }
 
+#if !CIRCUITPY_DISPLAY_LIFETIME_SIMPLE
 mp_obj_t fourwire_fourwire_start_vm(fourwire_fourwire_obj_t *self) {
     mp_obj_t refs = mp_obj_new_list(4, NULL);
     if (self->bus == &self->inline_bus) {
@@ -266,3 +271,4 @@ mp_obj_t fourwire_fourwire_start_vm(fourwire_fourwire_obj_t *self) {
     mp_obj_list_store(refs, MP_OBJ_NEW_SMALL_INT(3), self->reset);
     return refs;
 }
+#endif
