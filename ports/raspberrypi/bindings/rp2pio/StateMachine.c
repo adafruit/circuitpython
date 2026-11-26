@@ -449,6 +449,14 @@ MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_stop_obj, rp2pio_statemachine_stop
 //|     ) -> None:
 //|         """Write the data contained in ``buffer`` to the state machine. If the buffer is empty, nothing happens.
 //|
+//|         This function blocks until the data has been sent, not just queued. With the default
+//|         ``wait_for_txstall=True``, it returns once the TX FIFO and OSR are empty and the state machine
+//|         has stalled waiting for more data, so there is no need to wait for the output to finish
+//|         afterwards. With ``wait_for_txstall=False``, it returns once the TX FIFO is empty, which may be
+//|         before the last word has been shifted out of the OSR. If the program never stalls waiting for
+//|         data (for example, it only uses ``pull noblock``), use ``wait_for_txstall=False``. To send
+//|         without blocking, use `background_write`.
+//|
 //|         Writes to the FIFO will match the input buffer's element size. For example, bytearray elements
 //|         will perform 8 bit writes to the PIO FIFO. The RP2040's memory bus will duplicate the value into
 //|         the other byte positions. So, pulling more data in the PIO assembly will read the duplicated values.
@@ -859,6 +867,9 @@ MP_DEFINE_CONST_FUN_OBJ_KW(rp2pio_statemachine_readinto_obj, 2, rp2pio_statemach
 //|         may be different. The function will return once both are filled.
 //|         If buffer slice lengths are both 0, nothing happens.
 //|
+//|         Like `write`, this function also waits for the written data to be sent before returning
+//|         (see ``wait_for_txstall``).
+//|
 //|         Data transfers to and from the FIFOs will match the corresponding buffer's element size. See
 //|         `write` and `readinto` for details.
 //|
@@ -986,8 +997,10 @@ MP_PROPERTY_GETSET(rp2pio_statemachine_frequency_obj,
     (mp_obj_t)&rp2pio_statemachine_set_frequency_obj);
 
 //|     txstall: bool
-//|     """True when the state machine has stalled due to a full TX FIFO since the last
-//|        `clear_txstall` call."""
+//|     """True when the state machine has stalled waiting for data from an empty TX FIFO
+//|        (a blocking ``pull`` or an autopull) since the last `clear_txstall` call.
+//|        `write` clears this flag once all of its data is queued, then uses it to detect when
+//|        transmission has finished."""
 
 static mp_obj_t rp2pio_statemachine_obj_get_txstall(mp_obj_t self_in) {
     rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_in);
