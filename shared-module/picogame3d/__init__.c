@@ -7,10 +7,10 @@
 #include "shared-module/picogame3d/__init__.h"
 #include "shared-module/picogame/__init__.h"
 
-// Mark rows y0..h of the canvas dirty (the full width), in scene coordinates.
-static void mark_rows(picogame_canvas_obj_t *cv, int y0) {
-    if (y0 < cv->h && cv->w > 0) {
-        picogame_canvas_dirty_union(cv, cv->x, cv->y + y0, cv->x + cv->w, cv->y + cv->h);
+// Mark rows y0..y1 of the canvas dirty (the full width), in scene coordinates.
+static void mark_rows(picogame_canvas_obj_t *cv, int y0, int y1) {
+    if (y0 < y1 && cv->w > 0) {
+        picogame_canvas_dirty_union(cv, cv->x, cv->y + y0, cv->x + cv->w, cv->y + y1);
     }
 }
 
@@ -77,7 +77,7 @@ void picogame3d_road(picogame_canvas_obj_t *cv, int ri0,
             row_span(row, w, mid - dw, mid + dw - 1, colors[5]);
         }
     }
-    mark_rows(cv, 0);
+    mark_rows(cv, 0, cv->h);
 }
 
 // Context + row walker for the mode7 loop (each row derives rowdist/steps from its own sy).
@@ -89,6 +89,7 @@ typedef struct {
     int32_t z, rx0, ry0, rsx, rsy, cam_x, cam_y;
     bool transp;
     int32_t key;
+    bool up;                                    // ceiling: rows above the horizon
 } mode7_ctx_t;
 
 static void mode7_rows(void *arg, int lo, int hi) {
@@ -103,7 +104,11 @@ static void mode7_rows(void *arg, int lo, int hi) {
         && ltw >= 1 && lth >= 1 && ltw + lth <= 16;   // lane1 shift = shy-ltw must be >= 0
     #endif
     for (int sy = lo; sy < hi; sy++) {
+        // A ceiling mirrors the floor about the horizon, so one sign flip covers both.
         int denom = (sy + c->y_off) - c->horizon;
+        if (c->up) {
+            denom = -denom;
+        }
         if (denom <= 0) {
             continue;
         }
@@ -137,7 +142,7 @@ static void mode7_rows(void *arg, int lo, int hi) {
 
 void picogame3d_mode7(picogame_canvas_obj_t *cv, picogame_bitmap_obj_t *tex,
     int horizon, int y_off, int32_t z, int32_t rx0, int32_t ry0, int32_t rsx, int32_t rsy,
-    int32_t cam_x, int32_t cam_y) {
+    int32_t cam_x, int32_t cam_y, bool up) {
     // Perspective ground plane (Mode-7 / floorcaster). For each screen row below
     // `horizon`, distance = z / (row - horizon) (16.16); the texture-space coord
     // of the left edge is cam + distance*ray0, stepping by distance*rayDelta per
@@ -161,16 +166,76 @@ void picogame3d_mode7(picogame_canvas_obj_t *cv, picogame_bitmap_obj_t *tex,
     // sy is a row WITHIN this surface (a StripDraw view is a Canvas onto one strip);
     // the absolute screen row is sy + y_off, so the horizon test uses that. y_off = 0
     // for a full-screen Canvas, = the strip's screen y for a StripDraw view (0-RAM floor).
-    int y0 = horizon - y_off + 1;
-    if (y0 < 0) {
+    // A ceiling takes the rows above the horizon instead.
+    int y0 = picogame_imax(horizon - y_off + 1, 0), y1 = cv->h;
+    if (up) {
         y0 = 0;
+        y1 = picogame_imin(horizon - y_off, cv->h);
     }
     mode7_ctx_t ctx = {
         cv, data, pal, fmt, stride, shx, shy, mx, my, horizon, y_off,
-        z, rx0, ry0, rsx, rsy, cam_x, cam_y, transp, key
+        z, rx0, ry0, rsx, rsy, cam_x, cam_y, transp, key, up
     };
-    mode7_rows(&ctx, y0, cv->h);
-    mark_rows(cv, y0);
+    mode7_rows(&ctx, y0, y1);
+    mark_rows(cv, y0, y1);
+}
+
+// Textured wall columns (the Doom column renderer). For each column, walk the rows with a 16.16
+// texture accumulator through a light-level colormap. The transposed atlas makes one texture
+// column a contiguous run, and power-of-two sizes turn the wrap into a mask.
+void picogame3d_tcolumns(picogame_canvas_obj_t *cv, picogame_bitmap_obj_t *tex,
+    const int32_t *dists, const uint16_t *wallx, const uint16_t *kinds, int n,
+    const uint8_t *cmap, const picogame3d_tcolumns_args_t *p) {
+    const int sh = p->sh, stride = p->stride, tex_cols = p->tex_cols, nlights = p->nlights;
+    const int light_shift = p->light_shift, x_off = p->x_off, y_off = p->y_off;
+    const int mode = p->mode, tex_id = p->tex_id;
+    int texels = tex->width;
+    if (tex->format != PICOGAME_FMT_PAL8 || tex->palette == NULL
+        || texels <= 0 || (texels & (texels - 1)) || tex_cols <= 0 || (tex_cols & (tex_cols - 1))
+        || n <= 0 || stride <= 0 || nlights <= 0) {
+        return;
+    }
+    const uint16_t *pal = tex->palette;
+    const int cw = cv->w, ch = cv->h, mask = texels - 1, half = sh >> 1;
+    for (int i = 0; i < n; i++) {
+        int32_t perp = dists[i];
+        int type = kinds[i] >> 1;
+        if (perp <= 0 || type < 1) {
+            continue;
+        }
+        int lh = (int)(((int32_t)sh << 16) / perp);   // full projected height, unclipped
+        int t = half - (lh >> 1) + y_off;
+        int b = t + lh;
+        if (mode) {
+            // A step riser stands on the floor line, as high as its type in eighths of a cell.
+            t = b - ((lh * picogame_imin(type, 8)) >> 3);
+        }
+        int x0 = picogame_imax(i * stride + x_off, 0);
+        int x1 = picogame_imin(i * stride + x_off + stride, cw);
+        int row = (mode ? tex_id : type - 1) * tex_cols + ((wallx[i] * tex_cols) >> 16);
+        if (lh <= 0 || b <= 0 || t >= ch || x1 <= x0 || (unsigned)row >= tex->height) {
+            continue;                               // a type past the atlas draws nothing
+        }
+        const uint8_t *src = tex->data + (size_t)row * tex->stride;
+        int light = picogame_imin((int)(perp >> light_shift) + (kinds[i] & 1), nlights - 1);
+        const uint8_t *lm = cmap + (light << 8);
+        int32_t vstep = (int32_t)(((uint32_t)texels << 16) / (uint32_t)picogame_imax(b - t, 1));
+        int ct = picogame_imax(t, 0), cb = picogame_imin(b, ch);
+        int32_t v0 = (ct - t) * vstep;
+        for (int x = x0; x < x1; x++) {
+            uint16_t *dst = cv->data + ct * cw + x;
+            int32_t v = v0;
+            for (int y = ct; y < cb; y++) {
+                *dst = pal[lm[src[(v >> 16) & mask]]];
+                dst += cw;
+                v += vstep;
+            }
+        }
+    }
+    int x0 = picogame_imax(x_off, 0), x1 = picogame_imin(x_off + n * stride, cw);
+    if (x1 > x0) {
+        picogame_canvas_dirty_union(cv, cv->x + x0, cv->y, cv->x + x1, cv->y + ch);
+    }
 }
 
 // sin of a Q16 degree angle: lerp between whole-degree LUT entries. The racing-road curvature is
