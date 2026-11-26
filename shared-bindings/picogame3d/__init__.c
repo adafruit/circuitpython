@@ -6,6 +6,8 @@
 //
 // picogame3d: perspective and 3D drawing for picogame canvases.
 
+#include <string.h>
+
 #include "py/runtime.h"
 #include "shared-module/picogame/pg_compat.h"
 #include "shared-bindings/picogame/Bitmap.h"
@@ -18,7 +20,8 @@
 //| The `picogame3d` module draws pseudo-3D views into a :py:class:`picogame.Canvas`,
 //| including a `picogame.StripDraw` view: a perspective floor (`mode7`), a racing
 //| road (`road_edges` and `road`) and grid-map wall rays (`raycast`). `project`
-//| batch-projects 3D points for :py:class:`picogame.Triangles` and
+//| batch-projects 3D points, and `project_mesh` projects, culls and sorts a whole
+//| triangle mesh, for :py:class:`picogame.Triangles` and
 //| :py:meth:`picogame.Canvas.fill_triangles`.
 //|
 //| These are low-level interfaces. The ``picogame_mode7``, ``picogame_road`` and
@@ -137,6 +140,67 @@ static __attribute__((noinline)) int32_t pg_fmul_basis(int32_t a, int32_t b) {
 }
 #endif
 
+#if CIRCUITPY_PICOGAME3D_FLOAT
+typedef float pg_num_t;
+#else
+typedef int32_t pg_num_t;
+#endif
+
+// Project n points for project and project_mesh. Screen x and y advance by `step` int16 slots and
+// the view depth by `zstep` slots, so the outputs can be separate arrays or fields of a struct.
+// A point behind the near plane gets x = y = -32768.
+static __attribute__((noinline)) void pg_project_points(const pg_num_t *cam, const pg_num_t *pts, int n,
+    int16_t *sx, int16_t *sy, int step, pg_num_t *sz, int zstep) {
+    pg_num_t ex = cam[0], ey = cam[1], ez = cam[2];
+    pg_num_t rx = cam[3], rz = cam[4];
+    pg_num_t ux = cam[5], uy = cam[6], uz = cam[7];
+    pg_num_t fx = cam[8], fy = cam[9], fz = cam[10];
+    pg_num_t focal = cam[11], cx0 = cam[12], cy0 = cam[13], near = cam[14];
+    #if !CIRCUITPY_PICOGAME3D_FLOAT
+    // Full-precision Q16 dot products (int64 mul per term). A Q8-prescaled-basis/MULS variant was
+    // ~30% faster, but its error grows with |coord| (~0.2%/axis) and k = focal/cz AMPLIFIES it near
+    // the near plane - host-measured 23-34 px warps on close fly-bys at a file-browser world scale
+    // (walls visibly broke). Correctness first: Q16 keeps the worst error a few px at any cz >= near,
+    // for coords up to +-32k units; still ~4-5x faster than the same math in Python on the M0+.
+    // FMULB: same result as FMUL for |b| <= 65536 (every basis component), without
+    // __aeabi_lmul. The products by k keep FMUL because k is not bounded.
+    #define FMUL(a, b) ((int32_t)(((int64_t)(a) * (b)) >> 16))
+    #define FMULB(a, b) pg_fmul_basis((a), (b))
+    #endif
+    for (int i = 0; i < n; i++) {
+        pg_num_t X = pts[i * 3] - ex, Y = pts[i * 3 + 1] - ey, Z = pts[i * 3 + 2] - ez;
+        int16_t x = -32768, y = -32768;
+        #if CIRCUITPY_PICOGAME3D_FLOAT
+        float cz = X * fx + Y * fy + Z * fz;
+        if (cz >= near) {
+            float k = focal / cz;                   // hardware divide on an FPU part
+            x = (int16_t)(cx0 + (X * rx + Z * rz) * k);
+            y = (int16_t)(cy0 - (X * ux + Y * uy + Z * uz) * k);
+        }
+        #else
+        int32_t cz = FMULB(X, fx) + FMULB(Y, fy) + FMULB(Z, fz);
+        if (cz >= near) {
+            // focal/cz in 16.16. A 32-bit divide (focal<<8 = Q24, cz>>8 = Q8 -> Q16) is ~4x cheaper
+            // than an int64 divide on the M0+ (no HW divide) and the lost cz precision costs <0.02 px
+            // (host-measured). Needs FOCAL < ~250 (focal<<8 in uint32) and near >= 1/256 (cz>>8 nonzero).
+            int32_t k = (int32_t)(((uint32_t)focal << 8) / (uint32_t)(cz >> 8));
+            int32_t rr = FMULB(X, rx) + FMULB(Z, rz);
+            int32_t uu = FMULB(X, ux) + FMULB(Y, uy) + FMULB(Z, uz);
+            x = (int16_t)((cx0 + FMUL(rr, k)) >> 16);
+            y = (int16_t)((cy0 - FMUL(uu, k)) >> 16);
+        }
+        #endif
+        *sx = x;
+        *sy = y;
+        *sz = cz;
+        sx += step;
+        sy += step;
+        sz += zstep;
+    }
+#undef FMUL
+#undef FMULB
+}
+
 //| def project(
 //|     cam: ReadableBuffer,
 //|     pts: ReadableBuffer,
@@ -183,66 +247,194 @@ static mp_obj_t picogame3d_project(size_t n_args, const mp_obj_t *args) {
     // Never read or write past any buffer: 3 four-byte coordinates per point, one int16 per output.
     n = picogame_imin(n, (int)(pi.len / 12));
     n = picogame_imin(n, (int)(picogame_imin(xi.len, yi.len) >> 1));
-    #if CIRCUITPY_PICOGAME3D_FLOAT
-    const float *cam = ci.buf;
-    const float *pts = pi.buf;
-    float ex = cam[0], ey = cam[1], ez = cam[2];
-    float rx = cam[3], rz = cam[4];
-    float ux = cam[5], uy = cam[6], uz = cam[7];
-    float fx = cam[8], fy = cam[9], fz = cam[10];
-    float focal = cam[11], cx0 = cam[12], cy0 = cam[13], near = cam[14];
-    for (int i = 0; i < n; i++) {
-        float X = pts[i * 3] - ex, Y = pts[i * 3 + 1] - ey, Z = pts[i * 3 + 2] - ez;
-        float cz = X * fx + Y * fy + Z * fz;
-        if (cz < near) {
-            osx[i] = -32768;
-            osy[i] = -32768;
-            continue;
-        }
-        float k = focal / cz;                       // hardware divide on an FPU part
-        osx[i] = (int16_t)(cx0 + (X * rx + Z * rz) * k);
-        osy[i] = (int16_t)(cy0 - (X * ux + Y * uy + Z * uz) * k);
-    }
-    #else
-    const int32_t *cam = ci.buf;                    // all values 16.16
-    const int32_t *pts = pi.buf;
-    int32_t ex = cam[0], ey = cam[1], ez = cam[2];
-    int32_t rx = cam[3], rz = cam[4];
-    int32_t ux = cam[5], uy = cam[6], uz = cam[7];
-    int32_t fx = cam[8], fy = cam[9], fz = cam[10];
-    int32_t focal = cam[11], cx0 = cam[12], cy0 = cam[13], near = cam[14];
-    // Full-precision Q16 dot products (int64 mul per term). A Q8-prescaled-basis/MULS variant was
-    // ~30% faster, but its error grows with |coord| (~0.2%/axis) and k = focal/cz AMPLIFIES it near
-    // the near plane - host-measured 23-34 px warps on close fly-bys at a file-browser world scale
-    // (walls visibly broke). Correctness first: Q16 keeps the worst error a few px at any cz >= near,
-    // for coords up to +-32k units; still ~4-5x faster than the same math in Python on the M0+.
-    // FMULB: same result as FMUL for |b| <= 65536 (every basis component), without
-    // __aeabi_lmul. The products by k keep FMUL because k is not bounded.
-    #define FMUL(a, b) ((int32_t)(((int64_t)(a) * (b)) >> 16))
-    #define FMULB(a, b) pg_fmul_basis((a), (b))
-    for (int i = 0; i < n; i++) {
-        int32_t X = pts[i * 3] - ex, Y = pts[i * 3 + 1] - ey, Z = pts[i * 3 + 2] - ez;
-        int32_t cz = FMULB(X, fx) + FMULB(Y, fy) + FMULB(Z, fz);
-        if (cz < near) {
-            osx[i] = -32768;
-            osy[i] = -32768;
-            continue;
-        }
-        // focal/cz in 16.16. A 32-bit divide (focal<<8 = Q24, cz>>8 = Q8 -> Q16) is ~4x cheaper than
-        // an int64 divide on the M0+ (no HW divide) and the lost cz precision costs <0.02 px (host-
-        // measured). Needs FOCAL < ~250 (focal<<8 in uint32) and near >= 1/256 (cz>>8 nonzero).
-        int32_t k = (int32_t)(((uint32_t)focal << 8) / (uint32_t)(cz >> 8));
-        int32_t rr = FMULB(X, rx) + FMULB(Z, rz);
-        int32_t uu = FMULB(X, ux) + FMULB(Y, uy) + FMULB(Z, uz);
-        osx[i] = (int16_t)((cx0 + FMUL(rr, k)) >> 16);
-        osy[i] = (int16_t)((cy0 - FMUL(uu, k)) >> 16);
-    }
-#undef FMUL
-#undef FMULB
-    #endif
+    pg_num_t depth;                                 // not wanted here
+    pg_project_points(ci.buf, pi.buf, n, osx, osy, 1, &depth, 0);
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame3d_project_obj, 5, 5, picogame3d_project);
+
+//| def project_mesh(
+//|     cam: ReadableBuffer,
+//|     pts: ReadableBuffer,
+//|     n: int,
+//|     colors: ReadableBuffer,
+//|     out_verts: WriteableBuffer,
+//|     out_colors: WriteableBuffer,
+//|     scratch: WriteableBuffer,
+//|     indices: ReadableBuffer,
+//| ) -> int:
+//|     """Project a triangle mesh and prepare it for :py:meth:`picogame.Canvas.fill_triangles`
+//|     or :py:class:`picogame.Triangles`.
+//|
+//|     Triangles that cross the near plane or face away from the camera are dropped. The rest
+//|     are written far to near, so drawing them in order hides the parts behind. ``cam`` and
+//|     ``pts`` use the same element types as `project`.
+//|
+//|     :param ~circuitpython_typing.ReadableBuffer cam: 15 camera parameters, as for
+//|         `project`
+//|     :param ~circuitpython_typing.ReadableBuffer pts: world coordinates, x, y, z per point
+//|     :param int n: number of triangles
+//|     :param ~circuitpython_typing.ReadableBuffer colors: ``n`` ``uint16`` colors, one per triangle
+//|     :param ~circuitpython_typing.WriteableBuffer out_verts: ``int16`` screen coordinates, six
+//|         per output triangle. It may hold fewer than ``n`` triangles, because only the ones
+//|         facing the camera are written
+//|     :param ~circuitpython_typing.WriteableBuffer out_colors: ``uint16`` colors, one per output
+//|         triangle
+//|     :param ~circuitpython_typing.WriteableBuffer scratch: working space: 8 bytes per output
+//|         triangle plus 8 bytes per point
+//|     :param ~circuitpython_typing.ReadableBuffer indices: ``uint16`` point indices, three per
+//|         triangle; each point is projected once, however many triangles share it
+//|     :return: the number of triangles written
+//|     :raises ValueError: if a buffer is too small, including when more triangles face the
+//|         camera than ``out_verts`` or ``out_colors`` can hold, or if an index is past the
+//|         last point"""
+//|     ...
+//|
+typedef struct {
+    int16_t x, y;
+    pg_num_t z;                                     // view depth; below near = behind the camera
+} pg_vertex_t;
+
+// Sort the m output triangles by key (depth rank << 16 | slot) and reorder verts/colors to match.
+static void pg_mesh_order(uint32_t *key, uint32_t *tmp, int m, int16_t *verts, uint16_t *colors) {
+    uint16_t count[256];
+    // The slot in the low half makes every key unique, so only the two rank bytes need a pass.
+    for (int shift = 16; shift < 32; shift += 8) {
+        memset(count, 0, sizeof(count));
+        for (int i = 0; i < m; i++) {
+            count[(key[i] >> shift) & 255]++;
+        }
+        uint16_t pos = 0;
+        for (int b = 0; b < 256; b++) {
+            uint16_t c = count[b];
+            count[b] = pos;
+            pos += c;
+        }
+        for (int i = 0; i < m; i++) {
+            tmp[count[(key[i] >> shift) & 255]++] = key[i];
+        }
+        uint32_t *swap = key;
+        key = tmp;
+        tmp = swap;
+    }
+    // Two passes leave the result back in key. Apply the permutation in place, one cycle at a
+    // time; 0xffffffff marks a finished slot (m <= 65535 keeps real keys below it).
+    for (int i = 0; i < m; i++) {
+        if (key[i] == 0xffffffff) {
+            continue;
+        }
+        int16_t v[6];
+        memcpy(v, verts + i * 6, sizeof(v));
+        uint16_t c = colors[i];
+        int j = i;
+        for (;;) {
+            int k = key[j] & 0xffff;
+            key[j] = 0xffffffff;
+            if (k == i) {
+                break;
+            }
+            memcpy(verts + j * 6, verts + k * 6, sizeof(v));
+            colors[j] = colors[k];
+            j = k;
+        }
+        memcpy(verts + j * 6, v, sizeof(v));
+        colors[j] = c;
+    }
+}
+
+static mp_obj_t picogame3d_project_mesh(size_t n_args, const mp_obj_t *args) {
+    mp_buffer_info_t cam_info, pts_info, colors_info, verts_info, out_colors_info, scratch_info;
+    mp_buffer_info_t indices_info;
+    mp_get_buffer_raise(args[0], &cam_info, MP_BUFFER_READ);
+    mp_get_buffer_raise(args[1], &pts_info, MP_BUFFER_READ);
+    int n = mp_obj_get_int(args[2]);
+    mp_get_buffer_raise(args[3], &colors_info, MP_BUFFER_READ);
+    mp_get_buffer_raise(args[4], &verts_info, MP_BUFFER_WRITE);
+    mp_get_buffer_raise(args[5], &out_colors_info, MP_BUFFER_WRITE);
+    mp_get_buffer_raise(args[6], &scratch_info, MP_BUFFER_WRITE);
+    mp_get_buffer_raise(args[7], &indices_info, MP_BUFFER_READ);
+    int point_count = (int)(pts_info.len / (3 * sizeof(pg_num_t)));
+    int capacity = (int)MIN(verts_info.len / 12, out_colors_info.len / 2);
+    capacity = MIN(capacity, n);
+    size_t scratch_needed = (size_t)capacity * 8 + (size_t)point_count * sizeof(pg_vertex_t);
+    if (n < 0 || n > 65535 || cam_info.len < 15 * sizeof(pg_num_t) || colors_info.len < (size_t)n * 2
+        || scratch_info.len < scratch_needed
+        || indices_info.len < (size_t)n * 6) {
+        mp_raise_ValueError(MP_ERROR_TEXT("buffer too small"));
+    }
+    pg_num_t cam[15];                               // a local copy, so the output stores cannot alias it
+    memcpy(cam, cam_info.buf, sizeof(cam));
+    const uint16_t *indices = indices_info.buf;
+    const uint16_t *colors = colors_info.buf;
+    int16_t *verts = verts_info.buf;
+    uint16_t *out_colors = out_colors_info.buf;
+    uint32_t *key = scratch_info.buf;
+    // Every point is projected once, after the 8 bytes per triangle that the sort needs.
+    pg_vertex_t *projected = (pg_vertex_t *)(key + 2 * capacity);
+    pg_project_points(cam, pts_info.buf, point_count, &projected->x, &projected->y,
+        sizeof(pg_vertex_t) / 2, &projected->z, sizeof(pg_vertex_t) / sizeof(pg_num_t));
+    // First pass: keep the visible triangles and their summed depth, then rank the depths.
+    pg_num_t *depth = (pg_num_t *)key;
+    pg_num_t nearest = 0, farthest = 0;
+    int m = 0;
+    for (int t = 0; t < n; t++) {
+        const pg_vertex_t *v[3];
+        pg_num_t d = 0;
+        int j;
+        for (j = 0; j < 3; j++) {
+            int i = indices[t * 3 + j];
+            if (i >= point_count) {
+                mp_raise_ValueError(MP_ERROR_TEXT("index out of range"));
+            }
+            v[j] = projected + i;
+            if (v[j]->z < cam[14]) {
+                break;
+            }
+            #if CIRCUITPY_PICOGAME3D_FLOAT
+            d += v[j]->z;
+            #else
+            d += v[j]->z >> 2;                      // three depths summed without overflow
+            #endif
+        }
+        // Skip a triangle that crosses the near plane or faces away (screen y grows downward).
+        if (j < 3 || (int32_t)(v[1]->x - v[0]->x) * (v[2]->y - v[0]->y)
+            >= (int32_t)(v[1]->y - v[0]->y) * (v[2]->x - v[0]->x)) {
+            continue;
+        }
+        if (m == capacity) {
+            mp_raise_ValueError(MP_ERROR_TEXT("buffer too small"));
+        }
+        for (j = 0; j < 3; j++) {
+            verts[m * 6 + j * 2] = v[j]->x;
+            verts[m * 6 + j * 2 + 1] = v[j]->y;
+        }
+        if (m == 0 || d < nearest) {
+            nearest = d;
+        }
+        if (m == 0 || d > farthest) {
+            farthest = d;
+        }
+        depth[m] = d;
+        out_colors[m++] = colors[t];
+    }
+    #if CIRCUITPY_PICOGAME3D_FLOAT
+    float scale = farthest > nearest ? 65535.0f / (farthest - nearest) : 0;
+    for (int i = 0; i < m; i++) {
+        key[i] = (uint32_t)((farthest - depth[i]) * scale) << 16 | i;
+    }
+    #else
+    int shift = 0;
+    while ((uint32_t)(farthest - nearest) >> shift > 65535) {
+        shift++;
+    }
+    for (int i = 0; i < m; i++) {
+        key[i] = ((uint32_t)(farthest - depth[i]) >> shift) << 16 | i;
+    }
+    #endif
+    pg_mesh_order(key, key + capacity, m, verts, out_colors);
+    return MP_OBJ_NEW_SMALL_INT(m);
+}
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame3d_project_mesh_obj, 8, 8, picogame3d_project_mesh);
 
 //| def raycast(
 //|     map: ReadableBuffer,
@@ -531,6 +723,7 @@ static const mp_rom_map_elem_t picogame3d_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_road_edges), MP_ROM_PTR(&picogame3d_road_edges_obj) },
     { MP_ROM_QSTR(MP_QSTR_raycast), MP_ROM_PTR(&picogame3d_raycast_obj) },
     { MP_ROM_QSTR(MP_QSTR_project), MP_ROM_PTR(&picogame3d_project_obj) },
+    { MP_ROM_QSTR(MP_QSTR_project_mesh), MP_ROM_PTR(&picogame3d_project_mesh_obj) },
     { MP_ROM_QSTR(MP_QSTR_FLOAT), MP_ROM_INT(CIRCUITPY_PICOGAME3D_FLOAT) },
 };
 static MP_DEFINE_CONST_DICT(picogame3d_module_globals, picogame3d_module_globals_table);
