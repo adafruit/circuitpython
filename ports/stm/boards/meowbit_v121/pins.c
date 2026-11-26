@@ -75,5 +75,11 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&displays[0].display)},
     { MP_ROM_QSTR(MP_QSTR_INTERNAL_SPI), MP_ROM_PTR(&supervisor_flash_spi_bus) },
+
+    // microSD slot, wired to SDIO. Use sdioio.SDCard with data=[board.SD_D0].
+    { MP_ROM_QSTR(MP_QSTR_SD_CLK), MP_ROM_PTR(&pin_PC12) },
+    { MP_ROM_QSTR(MP_QSTR_SD_CMD), MP_ROM_PTR(&pin_PD02) },
+    { MP_ROM_QSTR(MP_QSTR_SD_D0), MP_ROM_PTR(&pin_PC08) },
+    { MP_ROM_QSTR(MP_QSTR_SD_D3), MP_ROM_PTR(&pin_PC11) },
 };
 MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);

@@ -150,3 +150,30 @@ const mcu_tim_pin_obj_t mcu_tim_pin_list[44] = {
     TIM(1, 1, 3, &pin_PE13),
     TIM(1, 1, 4, &pin_PE14),
 };
+
+// SDIO
+SDIO_TypeDef *mcu_sdio_banks[1] = {SDIO};
+
+const mcu_periph_obj_t mcu_sdio_clock_list[1] = {
+    PERIPH(1, 12, &pin_PC12),
+};
+
+const mcu_periph_obj_t mcu_sdio_command_list[1] = {
+    PERIPH(1, 12, &pin_PD02),
+};
+
+const mcu_periph_obj_t mcu_sdio_data0_list[1] = {
+    PERIPH(1, 12, &pin_PC08),
+};
+
+const mcu_periph_obj_t mcu_sdio_data1_list[1] = {
+    PERIPH(1, 12, &pin_PC09),
+};
+
+const mcu_periph_obj_t mcu_sdio_data2_list[1] = {
+    PERIPH(1, 12, &pin_PC10),
+};
+
+const mcu_periph_obj_t mcu_sdio_data3_list[1] = {
+    PERIPH(1, 12, &pin_PC11),
+};
