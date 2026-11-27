@@ -1169,7 +1169,9 @@ ifneq ($(CIRCUITPY_ESP_PSRAM_SIZE),0)
 endif
 # The LVGL PPA draw unit uses the P4/S31 Pixel Processing Accelerator.
 ifneq ($(CIRCUITPY_DISPLAYIO_LVGL),0)
+ifneq ($(filter esp32p4 esp32s31,$(IDF_TARGET)),)
 	ESP_IDF_COMPONENTS_LINK += esp_driver_ppa esp_hal_ppa
+endif
 endif
 ifneq ($(CIRCUITPY_DOTCLOCKFRAMEBUFFER),0)
 	ESP_IDF_COMPONENTS_LINK += esp_lcd

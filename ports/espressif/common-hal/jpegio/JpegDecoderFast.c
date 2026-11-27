@@ -44,7 +44,7 @@ static bool decode_direct(jpeg_dec_config_t *config, jpeg_dec_io_t *io, displayi
     }
     jpeg_dec_close(decoder);
     if (ok) {
-        displayio_area_t area = { 0, 0, bitmap->width, bitmap->height, NULL };
+        displayio_area_t area = { 0, 0, bitmap->width, bitmap->height };
         displayio_bitmap_set_dirty_area(bitmap, &area);
     }
     return ok;

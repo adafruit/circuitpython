@@ -25,8 +25,14 @@
 
 /* Use the ESP32-P4/S31 Pixel Processing Accelerator for fills, blends and simple
  * images. PPA works on cache lines, so draw buffers must be 64-byte aligned. */
+#include "soc/soc_caps.h"
+#if defined(SOC_PPA_SUPPORTED) && SOC_PPA_SUPPORTED
 #define LV_USE_PPA 1
 #define LV_USE_PPA_IMG 1
+#else
+#define LV_USE_PPA 0
+#define LV_USE_PPA_IMG 0
+#endif
 /* Leave regular PSRAM arbitration gaps for the DSI framebuffer scanout DMA. */
 #define LV_PPA_BURST_LENGTH 64
 
